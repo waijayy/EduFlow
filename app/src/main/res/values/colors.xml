@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Base Colors -->
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+    
+    <!-- EduFlow Brand Colors -->
+    <color name="background_dark">#0D1117</color>
+    <color name="background_card">#161B22</color>
+    <color name="background_input">#21262D</color>
+    
+    <!-- Primary Colors -->
+    <color name="primary_cyan">#00D9FF</color>
+    <color name="primary_cyan_light">#4DE8FF</color>
+    <color name="accent_purple">#B24BF3</color>
+    <color name="accent_magenta">#D946EF</color>
+    
+    <!-- Gradient Colors -->
+    <color name="gradient_start">#00D9FF</color>
+    <color name="gradient_end">#B24BF3</color>
+    
+    <!-- Text Colors -->
+    <color name="text_primary">#FFFFFF</color>
+    <color name="text_secondary">#8B949E</color>
+    <color name="text_hint">#6E7681</color>
+    
+    <!-- Status Colors -->
+    <color name="success_green">#22C55E</color>
+    <color name="warning_yellow">#EAB308</color>
+    <color name="error_red">#EF4444</color>
+    
+    <!-- Dashboard Card Colors -->
+    <color name="card_green_bg">#0D2818</color>
+    <color name="card_green_border">#22C55E</color>
+    <color name="card_blue_bg">#0D1B2A</color>
+    <color name="card_blue_border">#3B82F6</color>
+    <color name="card_purple_bg">#1A0D2E</color>
+    <color name="card_purple_border">#A855F7</color>
+    <color name="card_orange_bg">#2A1A0D</color>
+    <color name="card_orange_border">#F97316</color>
+    
+    <!-- Navigation -->
+    <color name="nav_inactive">#6E7681</color>
+    <color name="nav_active">#00D9FF</color>
+</resources>
