@@ -8,6 +8,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.SeekBar;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -139,11 +140,53 @@ public class VideoAdapter extends RecyclerView.Adapter<VideoAdapter.VideoViewHol
         holder.binding.playerView.setOnClickListener(v -> {
             // handled by gesture detector
         });
+
+        setupSeekBar(holder);
     }
 
-    @Override
+    private void setupSeekBar(VideoViewHolder holder) {
+        holder.binding.seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                if (fromUser && holder.player != null) {
+                    holder.player.seekTo(progress);
+                }
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {
+            }
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {
+            }
+        });
+
+        holder.progressUpdater = new Runnable() {
+            @Override
+            public void run() {
+                if (holder.player != null) {
+                    if (holder.player.isPlaying()) {
+                        long duration = holder.player.getDuration();
+                        long position = holder.player.getCurrentPosition();
+                        if (duration > 0) {
+                            holder.binding.seekBar.setMax((int) duration);
+                            holder.binding.seekBar.setProgress((int) position);
+                        }
+                    }
+                }
+                holder.binding.seekBar.postDelayed(this, 500);
+            }
+        };
+        holder.binding.seekBar.post(holder.progressUpdater);
+    }
+
     public void onViewRecycled(@NonNull VideoViewHolder holder) {
         super.onViewRecycled(holder);
+        if (holder.progressUpdater != null) {
+            holder.binding.seekBar.removeCallbacks(holder.progressUpdater);
+            holder.progressUpdater = null;
+        }
         if (holder.player != null) {
             holder.player.release();
             holder.player = null;
@@ -198,6 +241,7 @@ public class VideoAdapter extends RecyclerView.Adapter<VideoAdapter.VideoViewHol
     static class VideoViewHolder extends RecyclerView.ViewHolder {
         final ItemVideoBinding binding;
         ExoPlayer player;
+        Runnable progressUpdater;
 
         VideoViewHolder(ItemVideoBinding binding) {
             super(binding.getRoot());

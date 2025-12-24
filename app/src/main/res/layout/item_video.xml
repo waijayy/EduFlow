@@ -76,6 +76,23 @@
 
     </LinearLayout>
 
+    <!-- Progress Bar -->
+    <SeekBar
+        android:id="@+id/seekBar"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="0dp"
+        android:maxHeight="4dp"
+        android:minHeight="4dp"
+        android:paddingStart="0dp"
+        android:paddingEnd="0dp"
+        android:progressDrawable="@drawable/neon_progress_drawable"
+        android:thumb="@android:color/transparent"
+        android:splitTrack="false"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
+
     <!-- Right Side Actions -->
     <LinearLayout
         android:layout_width="wrap_content"
