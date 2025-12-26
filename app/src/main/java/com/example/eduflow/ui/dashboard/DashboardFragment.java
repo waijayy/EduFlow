@@ -38,10 +38,20 @@ public class DashboardFragment extends Fragment {
     }
 
     private void setupStats() {
-        // Mock data for demonstration
+        // Fetch stats from Supabase
+        com.example.eduflow.auth.SupabaseManager.getQuizStats((quizzesDone, avgScore) -> {
+            if (getActivity() != null) {
+                getActivity().runOnUiThread(() -> {
+                    if (binding != null) {
+                        binding.tvQuizzesDone.setText(String.valueOf(quizzesDone));
+                        binding.tvAvgScore.setText(avgScore + "%");
+                    }
+                });
+            }
+        });
+
+        // Mock data for others for now
         binding.tvVideosWatched.setText("47");
-        binding.tvQuizzesDone.setText("32");
-        binding.tvAvgScore.setText("87%");
         binding.tvDayStreak.setText("12 days");
     }
 

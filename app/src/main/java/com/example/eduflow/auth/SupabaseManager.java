@@ -3,6 +3,7 @@ package com.example.eduflow.auth;
 import android.content.Context;
 import android.content.SharedPreferences;
 
+import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.util.concurrent.CompletableFuture;
@@ -26,6 +27,8 @@ public class SupabaseManager {
     private static final String KEY_USER_NAME = "user_name";
     private static final String KEY_IS_LOGGED_IN = "is_logged_in";
     private static final String KEY_MEMBER_SINCE = "member_since";
+    private static final String KEY_ACCESS_TOKEN = "access_token";
+    private static final String KEY_USER_ID = "user_id";
 
     private static SharedPreferences prefs;
     private static final OkHttpClient client = new OkHttpClient();
@@ -33,6 +36,11 @@ public class SupabaseManager {
 
     public static void initialize(Context context) {
         prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+
+        // Check if logged in but missing token (legacy session)
+        if (isLoggedIn() && getAccessToken().isEmpty()) {
+            signOut();
+        }
     }
 
     public static CompletableFuture<Boolean> signIn(String email, String password) {
@@ -52,7 +60,12 @@ public class SupabaseManager {
 
                 try (Response response = client.newCall(request).execute()) {
                     if (response.isSuccessful()) {
-                        saveSession(email, "");
+                        String responseBody = response.body().string();
+                        JSONObject jsonResponse = new JSONObject(responseBody);
+                        String accessToken = jsonResponse.getString("access_token");
+                        String userId = jsonResponse.getJSONObject("user").getString("id");
+
+                        saveSession(email, "", accessToken, userId);
                         return true;
                     } else {
                         String errorBody = response.body() != null ? response.body().string() : "No error body";
@@ -87,7 +100,12 @@ public class SupabaseManager {
 
                 try (Response response = client.newCall(request).execute()) {
                     if (response.isSuccessful()) {
-                        saveSession(email, name);
+                        String responseBody = response.body().string();
+                        JSONObject jsonResponse = new JSONObject(responseBody);
+                        String accessToken = jsonResponse.getString("access_token");
+                        String userId = jsonResponse.getJSONObject("user").getString("id");
+
+                        saveSession(email, name, accessToken, userId);
                         return true;
                     } else {
                         String errorBody = response.body() != null ? response.body().string() : "No error body";
@@ -100,7 +118,7 @@ public class SupabaseManager {
         }, executor);
     }
 
-    private static void saveSession(String email, String name) {
+    private static void saveSession(String email, String name, String accessToken, String userId) {
         if (prefs != null) {
             SharedPreferences.Editor editor = prefs.edit();
             String userName = name;
@@ -111,6 +129,8 @@ public class SupabaseManager {
             editor.putString(KEY_USER_EMAIL, email);
             editor.putBoolean(KEY_IS_LOGGED_IN, true);
             editor.putString(KEY_MEMBER_SINCE, "December 2024");
+            editor.putString(KEY_ACCESS_TOKEN, accessToken);
+            editor.putString(KEY_USER_ID, userId);
             editor.apply();
         }
     }
@@ -135,5 +155,110 @@ public class SupabaseManager {
 
     public static String getMemberSince() {
         return prefs != null ? prefs.getString(KEY_MEMBER_SINCE, "December 2024") : "December 2024";
+    }
+
+    public static String getUserId() {
+        return prefs != null ? prefs.getString(KEY_USER_ID, "") : "";
+    }
+
+    public static String getAccessToken() {
+        return prefs != null ? prefs.getString(KEY_ACCESS_TOKEN, "") : "";
+    }
+
+    public static void saveQuizResult(String quizId, int score, int totalQuestions) {
+        executor.execute(() -> {
+            try {
+                String userId = getUserId();
+                String token = getAccessToken();
+
+                if (userId.isEmpty() || token.isEmpty()) {
+                    System.err.println("saveQuizResult: Missing userId or token");
+                    return;
+                }
+
+                JSONObject json = new JSONObject();
+                json.put("user_id", userId);
+                json.put("quiz_id", quizId);
+                json.put("score", score);
+                json.put("total_questions", totalQuestions);
+
+                Request request = new Request.Builder()
+                        .url(SUPABASE_URL + "/rest/v1/quiz_results")
+                        .addHeader("apikey", SUPABASE_KEY)
+                        .addHeader("Authorization", "Bearer " + token)
+                        .addHeader("Content-Type", "application/json")
+                        .addHeader("Prefer", "return=minimal")
+                        .post(RequestBody.create(json.toString(), MediaType.parse("application/json")))
+                        .build();
+
+                try (Response response = client.newCall(request).execute()) {
+                    if (!response.isSuccessful()) {
+                        // Log error or handle it
+                        System.err.println("Failed to save quiz result: " + response.body().string());
+                    }
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        });
+    }
+
+    public interface StatsCallback {
+        void onStatsLoaded(int quizzesDone, int avgScore);
+    }
+
+    public static void getQuizStats(StatsCallback callback) {
+        executor.execute(() -> {
+            try {
+                String userId = getUserId();
+                String token = getAccessToken();
+
+                if (userId.isEmpty() || token.isEmpty()) {
+                    System.err.println("getQuizStats: Missing userId or token");
+                    callback.onStatsLoaded(0, 0);
+                    return;
+                }
+
+                // Fetch all quiz results for user
+                Request request = new Request.Builder()
+                        .url(SUPABASE_URL + "/rest/v1/quiz_results?select=score,total_questions&user_id=eq." + userId)
+                        .addHeader("apikey", SUPABASE_KEY)
+                        .addHeader("Authorization", "Bearer " + token)
+                        .get()
+                        .build();
+
+                try (Response response = client.newCall(request).execute()) {
+                    if (response.isSuccessful() && response.body() != null) {
+                        String responseBody = response.body().string();
+                        JSONArray results = new JSONArray(responseBody);
+
+                        int quizzesDone = results.length();
+                        int totalPercentage = 0;
+
+                        if (quizzesDone > 0) {
+                            for (int i = 0; i < quizzesDone; i++) {
+                                JSONObject result = results.getJSONObject(i);
+                                int score = result.getInt("score");
+                                int total = result.getInt("total_questions");
+                                if (total > 0) {
+                                    totalPercentage += (int) ((score / (float) total) * 100);
+                                }
+                            }
+                            int avgScore = totalPercentage / quizzesDone;
+
+                            // Callback on main thread usually required for UI, but caller can handle or we
+                            // use context
+                            // For simplicity here, just callback, caller (Fragment) should utilize
+                            // runOnUiThread
+                            callback.onStatsLoaded(quizzesDone, avgScore);
+                        } else {
+                            callback.onStatsLoaded(0, 0);
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        });
     }
 }

@@ -172,6 +172,12 @@ public class QuizActivity extends AppCompatActivity {
     }
 
     private void showResultFragment() {
+        // Save result to Supabase
+        com.example.eduflow.auth.SupabaseManager.saveQuizResult(
+                currentQuiz.getId(),
+                correctAnswers,
+                currentQuiz.getQuestionCount());
+
         QuizResultFragment fragment = QuizResultFragment.newInstance(
                 correctAnswers,
                 currentQuiz.getQuestionCount());
