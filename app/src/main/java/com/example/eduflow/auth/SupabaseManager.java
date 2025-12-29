@@ -6,6 +6,8 @@ import android.content.SharedPreferences;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -203,62 +205,177 @@ public class SupabaseManager {
         });
     }
 
-    public interface StatsCallback {
-        void onStatsLoaded(int quizzesDone, int avgScore);
+    public interface DashboardStatsCallback {
+        void onStatsLoaded(DashboardStats stats);
     }
 
-    public static void getQuizStats(StatsCallback callback) {
+    public static class DashboardStats {
+        public int quizzesDone;
+        public int avgScore;
+        public int bestScore;
+        public int lowestScore;
+        public List<Integer> recentScores = new ArrayList<>();
+        // Mocked/Future
+        public float totalHours = 42.5f;
+        public float avgHoursPerDay = 2.3f;
+        public int streakDays = 12;
+    }
+
+    public static void getDashboardStats(DashboardStatsCallback callback) {
         executor.execute(() -> {
             try {
                 String userId = getUserId();
                 String token = getAccessToken();
 
                 if (userId.isEmpty() || token.isEmpty()) {
-                    System.err.println("getQuizStats: Missing userId or token");
-                    callback.onStatsLoaded(0, 0);
+                    callback.onStatsLoaded(new DashboardStats());
                     return;
                 }
 
-                // Fetch all quiz results for user
+                // Fetch all quiz results, ordered by date (newest first)
                 Request request = new Request.Builder()
-                        .url(SUPABASE_URL + "/rest/v1/quiz_results?select=score,total_questions&user_id=eq." + userId)
+                        .url(SUPABASE_URL + "/rest/v1/quiz_results?select=score,total_questions,created_at&user_id=eq."
+                                + userId + "&order=created_at.desc")
                         .addHeader("apikey", SUPABASE_KEY)
                         .addHeader("Authorization", "Bearer " + token)
                         .get()
                         .build();
 
                 try (Response response = client.newCall(request).execute()) {
+                    DashboardStats stats = new DashboardStats();
                     if (response.isSuccessful() && response.body() != null) {
                         String responseBody = response.body().string();
                         JSONArray results = new JSONArray(responseBody);
 
-                        int quizzesDone = results.length();
-                        int totalPercentage = 0;
+                        stats.quizzesDone = results.length();
+                        long totalPercentageSum = 0;
+                        int min = 101;
+                        int max = -1;
 
-                        if (quizzesDone > 0) {
-                            for (int i = 0; i < quizzesDone; i++) {
-                                JSONObject result = results.getJSONObject(i);
-                                int score = result.getInt("score");
-                                int total = result.getInt("total_questions");
-                                if (total > 0) {
-                                    totalPercentage += (int) ((score / (float) total) * 100);
-                                }
+                        // Recent 7 for trend (results are descending, so take first 7 and reverse for
+                        // chronological)
+                        List<Integer> recent = new ArrayList<>();
+
+                        for (int i = 0; i < stats.quizzesDone; i++) {
+                            JSONObject result = results.getJSONObject(i);
+                            int score = result.optInt("score", 0);
+                            int total = result.optInt("total_questions", 1);
+                            if (total == 0)
+                                total = 1; // avoid divide by zero
+
+                            int percent = (int) ((score / (float) total) * 100);
+
+                            totalPercentageSum += percent;
+                            if (percent < min)
+                                min = percent;
+                            if (percent > max)
+                                max = percent;
+
+                            if (i < 7) {
+                                recent.add(percent);
                             }
-                            int avgScore = totalPercentage / quizzesDone;
-
-                            // Callback on main thread usually required for UI, but caller can handle or we
-                            // use context
-                            // For simplicity here, just callback, caller (Fragment) should utilize
-                            // runOnUiThread
-                            callback.onStatsLoaded(quizzesDone, avgScore);
-                        } else {
-                            callback.onStatsLoaded(0, 0);
                         }
+
+                        if (stats.quizzesDone > 0) {
+                            stats.avgScore = (int) (totalPercentageSum / stats.quizzesDone);
+                            stats.lowestScore = min;
+                            stats.bestScore = max;
+                        } else {
+                            stats.lowestScore = 0;
+                            stats.bestScore = 0;
+                        }
+
+                        // Reverse recent to be chronological (oldest -> newest) for the graph
+                        java.util.Collections.reverse(recent);
+                        stats.recentScores = recent;
                     }
+                    callback.onStatsLoaded(stats);
                 }
             } catch (Exception e) {
                 e.printStackTrace();
+                callback.onStatsLoaded(new DashboardStats());
             }
         });
+    }
+
+    public interface QuizListCallback {
+        void onQuizzesLoaded(List<QuizResult> quizzes);
+    }
+
+    public static class QuizResult {
+        public String quizName; // We might not have this in quiz_results... will default/mock if missing
+        public int scorePercent;
+        public String date;
+
+        public QuizResult(String name, int score, String date) {
+            this.quizName = name;
+            this.scorePercent = score;
+            this.date = date;
+        }
+    }
+
+    public static void getQuizHistory(QuizListCallback callback) {
+        executor.execute(() -> {
+            try {
+                String userId = getUserId();
+                String token = getAccessToken();
+
+                if (userId.isEmpty() || token.isEmpty()) {
+                    callback.onQuizzesLoaded(new ArrayList<>());
+                    return;
+                }
+
+                // Fetch expanded info if possible, but for now we just get results
+                // We'd ideally need a join or separate fetch for Quiz Details to get Name.
+                // Assuming "quiz_id" can be mapped or we just show "Quiz #ID" for now.
+                Request request = new Request.Builder()
+                        .url(SUPABASE_URL
+                                + "/rest/v1/quiz_results?select=quiz_id,score,total_questions,created_at&user_id=eq."
+                                + userId + "&order=created_at.desc")
+                        .addHeader("apikey", SUPABASE_KEY)
+                        .addHeader("Authorization", "Bearer " + token)
+                        .get()
+                        .build();
+
+                try (Response response = client.newCall(request).execute()) {
+                    List<QuizResult> list = new ArrayList<>();
+                    if (response.isSuccessful() && response.body() != null) {
+                        JSONArray results = new JSONArray(response.body().string());
+                        for (int i = 0; i < results.length(); i++) {
+                            JSONObject obj = results.getJSONObject(i);
+                            String qId = obj.optString("quiz_id", "Unknown");
+                            int s = obj.optInt("score", 0);
+                            int t = obj.optInt("total_questions", 1);
+                            String d = obj.optString("created_at", "").split("T")[0];
+
+                            // Map common IDs to names if hardcoded or just formatted
+                            String name = "Quiz " + qId;
+                            if (qId.equals("1"))
+                                name = "React Hooks Basics";
+                            else if (qId.equals("2"))
+                                name = "JavaScript ES6+";
+                            else if (qId.equals("3"))
+                                name = "CSS Grid Layout";
+
+                            int pct = (t > 0) ? (int) ((s / (float) t) * 100) : 0;
+                            list.add(new QuizResult(name, pct, d));
+                        }
+                    }
+                    callback.onQuizzesLoaded(list);
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+                callback.onQuizzesLoaded(new ArrayList<>());
+            }
+        });
+    }
+
+    // Deprecated but kept for compatibility until switch
+    public interface StatsCallback {
+        void onStatsLoaded(int quizzesDone, int avgScore);
+    }
+
+    public static void getQuizStats(StatsCallback callback) {
+        getDashboardStats(stats -> callback.onStatsLoaded(stats.quizzesDone, stats.avgScore));
     }
 }

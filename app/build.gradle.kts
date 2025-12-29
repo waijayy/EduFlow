@@ -60,7 +60,7 @@ dependencies {
     implementation(libs.glide)
     
     // Networking
-    implementation(libs.okhttp)
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
     implementation(libs.gson)
     
     // Coroutines

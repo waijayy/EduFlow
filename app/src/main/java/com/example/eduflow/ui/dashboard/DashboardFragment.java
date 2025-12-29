@@ -4,14 +4,20 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ProgressBar;
+import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.LinearLayout;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.cardview.widget.CardView;
 import androidx.fragment.app.Fragment;
+import androidx.recyclerview.widget.GridLayoutManager;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.eduflow.R;
+import com.example.eduflow.auth.SupabaseManager;
 import com.example.eduflow.databinding.FragmentDashboardBinding;
 
 import java.util.ArrayList;
@@ -20,6 +26,7 @@ import java.util.List;
 public class DashboardFragment extends Fragment {
 
     private FragmentDashboardBinding binding;
+    private boolean isHistoryExpanded = false;
 
     @Nullable
     @Override
@@ -33,73 +40,82 @@ public class DashboardFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        setupStats();
-        setupWeeklyProgress();
+        setupClickListeners();
+        fetchData();
+        setupQuizHistory();
     }
 
-    private void setupStats() {
-        // Fetch stats from Supabase
-        com.example.eduflow.auth.SupabaseManager.getQuizStats((quizzesDone, avgScore) -> {
+    private void setupClickListeners() {
+        binding.headerQuizHistory.setOnClickListener(v -> toggleHistory());
+    }
+
+    private void toggleHistory() {
+        isHistoryExpanded = !isHistoryExpanded;
+        binding.rvQuizHistory.setVisibility(isHistoryExpanded ? View.VISIBLE : View.GONE);
+        binding.ivExpand.setImageResource(isHistoryExpanded ? R.drawable.ic_arrow_up : R.drawable.ic_arrow_down);
+    }
+
+    private void fetchData() {
+        SupabaseManager.getDashboardStats(stats -> {
             if (getActivity() != null) {
                 getActivity().runOnUiThread(() -> {
-                    if (binding != null) {
-                        binding.tvQuizzesDone.setText(String.valueOf(quizzesDone));
-                        binding.tvAvgScore.setText(avgScore + "%");
-                    }
+                    if (binding == null)
+                        return;
+
+                    // Time Stats
+                    binding.tvTotalHours.setText(String.format("%.1fh", stats.totalHours));
+                    binding.tvAvgPerDay.setText(String.format("%.1fh", stats.avgHoursPerDay));
+                    binding.tvStreak.setText(String.valueOf(stats.streakDays));
+
+                    // Quiz Stats
+                    binding.tvBestScore.setText(stats.bestScore + "%");
+                    binding.tvAvgScore.setText(stats.avgScore + "%");
+                    binding.tvLowestScore.setText(stats.lowestScore + "%");
+
+                    // Trend Graph
+                    binding.trendGraph.setScores(stats.recentScores);
+
+                    // Badges
+                    setupBadges(stats);
                 });
             }
         });
-
-        // Mock data for others for now
-        binding.tvVideosWatched.setText("47");
-        binding.tvDayStreak.setText("12 days");
     }
 
-    private void setupWeeklyProgress() {
-        // Mock weekly progress data
-        List<Triple> weeklyData = new ArrayList<>();
-        weeklyData.add(new Triple("Mon", 66, R.id.progressMon));
-        weeklyData.add(new Triple("Tue", 31, R.id.progressTue));
-        weeklyData.add(new Triple("Wed", 85, R.id.progressWed));
-        weeklyData.add(new Triple("Thu", 45, R.id.progressThu));
-        weeklyData.add(new Triple("Fri", 72, R.id.progressFri));
-        weeklyData.add(new Triple("Sat", 58, R.id.progressSat));
-        weeklyData.add(new Triple("Sun", 40, R.id.progressSun));
+    private void setupBadges(SupabaseManager.DashboardStats stats) {
+        List<BadgeAdapter.Badge> badges = new ArrayList<>();
 
-        for (Triple data : weeklyData) {
-            View progressView = binding.getRoot().findViewById(data.viewId);
-            if (progressView != null) {
-                TextView tvDay = progressView.findViewById(R.id.tvDay);
-                if (tvDay != null)
-                    tvDay.setText(data.day);
+        // Logic for badges
+        badges.add(new BadgeAdapter.Badge("🏅", "10 Videos Watched", stats.totalHours > 2.0)); // Mock logic
+        badges.add(new BadgeAdapter.Badge("🧠", "First Quiz Completed", stats.quizzesDone >= 1));
+        badges.add(new BadgeAdapter.Badge("🔥", "7-Day Streak", stats.streakDays >= 7));
+        badges.add(new BadgeAdapter.Badge("💯", "Perfect Score", stats.bestScore == 100));
+        badges.add(new BadgeAdapter.Badge("🎯", "50 Videos Watched", false)); // Locked mock
+        badges.add(new BadgeAdapter.Badge("⚡", "30-Day Streak", stats.streakDays >= 30));
 
-                ProgressBar progressBar = progressView.findViewById(R.id.progressBar);
-                if (progressBar != null)
-                    progressBar.setProgress(data.progress);
+        BadgeAdapter adapter = new BadgeAdapter(badges);
+        binding.rvBadges.setLayoutManager(new GridLayoutManager(getContext(), 2));
+        binding.rvBadges.setAdapter(adapter);
+    }
 
-                TextView tvPercent = progressView.findViewById(R.id.tvPercent);
-                if (tvPercent != null)
-                    tvPercent.setText(data.progress + "%");
+    private void setupQuizHistory() {
+        SupabaseManager.getQuizHistory(quizzes -> {
+            if (getActivity() != null) {
+                getActivity().runOnUiThread(() -> {
+                    if (binding == null)
+                        return;
+
+                    QuizHistoryAdapter adapter = new QuizHistoryAdapter(quizzes);
+                    binding.rvQuizHistory.setLayoutManager(new LinearLayoutManager(getContext()));
+                    binding.rvQuizHistory.setAdapter(adapter);
+                });
             }
-        }
+        });
     }
 
     @Override
     public void onDestroyView() {
         super.onDestroyView();
         binding = null;
-    }
-
-    // Helper class for Triple
-    private static class Triple {
-        String day;
-        int progress;
-        int viewId;
-
-        Triple(String day, int progress, int viewId) {
-            this.day = day;
-            this.progress = progress;
-            this.viewId = viewId;
-        }
     }
 }

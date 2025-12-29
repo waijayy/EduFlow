@@ -30,14 +30,15 @@
     <color name="error_red">#EF4444</color>
     
     <!-- Dashboard Card Colors -->
-    <color name="card_green_bg">#0D2818</color>
-    <color name="card_green_border">#22C55E</color>
-    <color name="card_blue_bg">#0D1B2A</color>
-    <color name="card_blue_border">#3B82F6</color>
-    <color name="card_purple_bg">#1A0D2E</color>
-    <color name="card_purple_border">#A855F7</color>
-    <color name="card_orange_bg">#2A1A0D</color>
-    <color name="card_orange_border">#F97316</color>
+    <!-- Dashboard Card Colors (High Transparency + Bright Borders) -->
+    <color name="card_green_bg">#330D2818</color> <!-- ~20% opacity -->
+    <color name="card_green_border">#4ADE80</color> <!-- Brighter Green -->
+    <color name="card_blue_bg">#330D1B2A</color> <!-- ~20% opacity -->
+    <color name="card_blue_border">#00D9FF</color> <!-- Neon Cyan -->
+    <color name="card_purple_bg">#331A0D2E</color> <!-- ~20% opacity -->
+    <color name="card_purple_border">#E93DF5</color> <!-- Brighter Magenta -->
+    <color name="card_orange_bg">#332A1A0D</color> <!-- ~20% opacity -->
+    <color name="card_orange_border">#FFA500</color> <!-- Bright Orange -->
     
     <!-- Navigation -->
     <color name="nav_inactive">#6E7681</color>
