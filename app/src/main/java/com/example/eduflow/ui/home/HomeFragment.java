@@ -78,6 +78,7 @@ public class HomeFragment extends Fragment {
     public void onPause() {
         super.onPause();
         if (videoAdapter != null) {
+            videoAdapter.saveAllWatchData(); // Save all watch data before pausing
             videoAdapter.pauseAllVideos();
         }
     }
@@ -151,6 +152,7 @@ public class HomeFragment extends Fragment {
     public void onDestroyView() {
         super.onDestroyView();
         if (videoAdapter != null) {
+            videoAdapter.saveAllWatchData(); // Save all watch data before destroying
             videoAdapter.releaseAllPlayers();
         }
         binding = null;

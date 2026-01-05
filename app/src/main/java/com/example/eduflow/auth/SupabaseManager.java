@@ -2,12 +2,15 @@ package com.example.eduflow.auth;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.util.Log;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -219,6 +222,7 @@ public class SupabaseManager {
         public float totalHours = 42.5f;
         public float avgHoursPerDay = 2.3f;
         public int streakDays = 12;
+        public int totalVideosWatched = 0;
     }
 
     public static void getDashboardStats(DashboardStatsCallback callback) {
@@ -289,6 +293,74 @@ public class SupabaseManager {
                         java.util.Collections.reverse(recent);
                         stats.recentScores = recent;
                     }
+                    
+                    // Fetch total videos watched and hours watched
+                    try {
+                        Request videoRequest = new Request.Builder()
+                                .url(SUPABASE_URL + "/rest/v1/video_watches?select=video_id,watch_duration_seconds&user_id=eq." + userId)
+                                .addHeader("apikey", SUPABASE_KEY)
+                                .addHeader("Authorization", "Bearer " + token)
+                                .get()
+                                .build();
+                        
+                        try (Response videoResponse = client.newCall(videoRequest).execute()) {
+                            if (videoResponse.isSuccessful() && videoResponse.body() != null) {
+                                String videoBody = videoResponse.body().string();
+                                JSONArray videoWatches = new JSONArray(videoBody);
+                                // Count unique videos watched and sum watch duration
+                                Set<String> uniqueVideos = new HashSet<>();
+                                long totalWatchSeconds = 0;
+                                
+                                for (int i = 0; i < videoWatches.length(); i++) {
+                                    JSONObject watch = videoWatches.getJSONObject(i);
+                                    String videoId = watch.optString("video_id", "");
+                                    int watchDuration = watch.optInt("watch_duration_seconds", 0);
+                                    
+                                    if (!videoId.isEmpty()) {
+                                        uniqueVideos.add(videoId);
+                                    }
+                                    totalWatchSeconds += watchDuration;
+                                }
+                                
+                                stats.totalVideosWatched = uniqueVideos.size();
+                                stats.totalHours = totalWatchSeconds / 3600.0f;
+                            }
+                        } catch (Exception e) {
+                            // Table might not exist yet, keep default values
+                            e.printStackTrace();
+                        }
+                    } catch (Exception e) {
+                        // Table might not exist yet, keep default values
+                        e.printStackTrace();
+                    }
+                    
+                    // Fetch login streak synchronously (inline)
+                    try {
+                        JSONObject streakJson = new JSONObject();
+                        streakJson.put("p_user_id", userId);
+                        
+                        Request streakRequest = new Request.Builder()
+                                .url(SUPABASE_URL + "/rest/v1/rpc/calculate_login_streak")
+                                .addHeader("apikey", SUPABASE_KEY)
+                                .addHeader("Authorization", "Bearer " + token)
+                                .addHeader("Content-Type", "application/json")
+                                .post(RequestBody.create(streakJson.toString(), MediaType.parse("application/json")))
+                                .build();
+                        
+                        try (Response streakResponse = client.newCall(streakRequest).execute()) {
+                            if (streakResponse.isSuccessful() && streakResponse.body() != null) {
+                                String streakBody = streakResponse.body().string().trim().replace("\"", "");
+                                stats.streakDays = Integer.parseInt(streakBody);
+                            }
+                        } catch (Exception e) {
+                            // Function might not exist yet, keep default
+                            e.printStackTrace();
+                        }
+                    } catch (Exception e) {
+                        // Function might not exist yet, keep default
+                        e.printStackTrace();
+                    }
+                    
                     callback.onStatsLoaded(stats);
                 }
             } catch (Exception e) {
@@ -377,5 +449,326 @@ public class SupabaseManager {
 
     public static void getQuizStats(StatsCallback callback) {
         getDashboardStats(stats -> callback.onStatsLoaded(stats.quizzesDone, stats.avgScore));
+    }
+
+    /**
+     * Upsert video watch record (insert or update if exists)
+     * Uses PostgreSQL ON CONFLICT to avoid duplicates
+     */
+    public static void upsertVideoWatch(String videoId, int watchDurationSeconds, 
+                                         int videoDurationSeconds, float watchPercentage, 
+                                         boolean completed) {
+        executor.execute(() -> {
+            try {
+                String userId = getUserId();
+                String token = getAccessToken();
+
+                Log.d("SupabaseManager", String.format(
+                    "upsertVideoWatch called: videoId=%s, watchDuration=%ds, videoDuration=%ds, userId=%s",
+                    videoId, watchDurationSeconds, videoDurationSeconds, userId
+                ));
+
+                if (userId.isEmpty() || token.isEmpty()) {
+                    Log.e("SupabaseManager", "Missing userId or token - userId: " + userId + ", token empty: " + token.isEmpty());
+                    return;
+                }
+
+                JSONObject json = new JSONObject();
+                json.put("user_id", userId);
+                json.put("video_id", videoId);
+                json.put("watch_duration_seconds", watchDurationSeconds);
+                json.put("video_duration_seconds", videoDurationSeconds);
+                json.put("watch_percentage", watchPercentage);
+                json.put("completed", completed);
+
+                Log.d("SupabaseManager", "JSON payload: " + json.toString());
+
+                // Use POST with upsert header - Supabase will handle the conflict resolution
+                // The unique constraint on (user_id, video_id) will trigger the merge
+                Request request = new Request.Builder()
+                        .url(SUPABASE_URL + "/rest/v1/video_watches")
+                        .addHeader("apikey", SUPABASE_KEY)
+                        .addHeader("Authorization", "Bearer " + token)
+                        .addHeader("Content-Type", "application/json")
+                        .addHeader("Prefer", "resolution=merge-duplicates")
+                        .post(RequestBody.create(json.toString(), MediaType.parse("application/json")))
+                        .build();
+
+                Log.d("SupabaseManager", "Sending request to: " + SUPABASE_URL + "/rest/v1/video_watches");
+
+                try (Response response = client.newCall(request).execute()) {
+                    int statusCode = response.code();
+                    String responseBody = response.body() != null ? response.body().string() : "No response body";
+                    
+                    Log.d("SupabaseManager", String.format(
+                        "Response status: %d, body: %s", statusCode, responseBody
+                    ));
+
+                    if (!response.isSuccessful()) {
+                        Log.e("SupabaseManager", String.format(
+                            "Failed to upsert video watch - Status: %d, Error: %s",
+                            statusCode, responseBody
+                        ));
+                        System.err.println("Failed to upsert video watch: " + responseBody);
+                    } else {
+                        Log.d("SupabaseManager", String.format(
+                            "Successfully saved video watch: videoId=%s, duration=%ds",
+                            videoId, watchDurationSeconds
+                        ));
+                        // Update daily activity log with hours watched
+                        float hoursWatched = watchDurationSeconds / 3600.0f;
+                        updateDailyActivity(hoursWatched, 1); // 1 video watched
+                    }
+                } catch (Exception e) {
+                    Log.e("SupabaseManager", "Exception during upsert", e);
+                    e.printStackTrace();
+                }
+            } catch (Exception e) {
+                Log.e("SupabaseManager", "Exception in upsertVideoWatch", e);
+                e.printStackTrace();
+            }
+        });
+    }
+
+    /**
+     * Update daily activity log (PostgreSQL upsert syntax)
+     * Increments login_count, hours_watched, and videos_watched
+     */
+    private static void updateDailyActivity(float hoursWatched, int videosWatched) {
+        executor.execute(() -> {
+            try {
+                String userId = getUserId();
+                String token = getAccessToken();
+
+                if (userId.isEmpty() || token.isEmpty()) {
+                    return;
+                }
+
+                String today = java.time.LocalDate.now().toString();
+
+                // First, try to get existing record
+                Request getRequest = new Request.Builder()
+                        .url(SUPABASE_URL + "/rest/v1/user_activity_logs?user_id=eq." + userId 
+                            + "&activity_date=eq." + today + "&select=login_count,hours_watched,videos_watched")
+                        .addHeader("apikey", SUPABASE_KEY)
+                        .addHeader("Authorization", "Bearer " + token)
+                        .get()
+                        .build();
+
+                try (Response getResponse = client.newCall(getRequest).execute()) {
+                    JSONObject json = new JSONObject();
+                    json.put("user_id", userId);
+                    json.put("activity_date", today);
+
+                    if (getResponse.isSuccessful() && getResponse.body() != null) {
+                        String body = getResponse.body().string();
+                        JSONArray existing = new JSONArray(body);
+                        
+                        if (existing.length() > 0) {
+                            // Update existing record - increment values
+                            JSONObject existingRecord = existing.getJSONObject(0);
+                            int currentLoginCount = existingRecord.optInt("login_count", 0);
+                            float currentHours = (float) existingRecord.optDouble("hours_watched", 0.0);
+                            int currentVideos = existingRecord.optInt("videos_watched", 0);
+                            
+                            json.put("login_count", currentLoginCount); // Keep existing, login tracked separately
+                            json.put("hours_watched", currentHours + hoursWatched);
+                            json.put("videos_watched", currentVideos + videosWatched);
+
+                            // Use PATCH to update
+                            Request patchRequest = new Request.Builder()
+                                    .url(SUPABASE_URL + "/rest/v1/user_activity_logs?user_id=eq." + userId 
+                                        + "&activity_date=eq." + today)
+                                    .addHeader("apikey", SUPABASE_KEY)
+                                    .addHeader("Authorization", "Bearer " + token)
+                                    .addHeader("Content-Type", "application/json")
+                                    .addHeader("Prefer", "return=minimal")
+                                    .patch(RequestBody.create(json.toString(), MediaType.parse("application/json")))
+                                    .build();
+
+                            client.newCall(patchRequest).execute();
+                        } else {
+                            // Insert new record
+                            json.put("login_count", 0); // Login tracked separately
+                            json.put("hours_watched", hoursWatched);
+                            json.put("videos_watched", videosWatched);
+
+                            Request insertRequest = new Request.Builder()
+                                    .url(SUPABASE_URL + "/rest/v1/user_activity_logs")
+                                    .addHeader("apikey", SUPABASE_KEY)
+                                    .addHeader("Authorization", "Bearer " + token)
+                                    .addHeader("Content-Type", "application/json")
+                                    .addHeader("Prefer", "return=minimal")
+                                    .post(RequestBody.create(json.toString(), MediaType.parse("application/json")))
+                                    .build();
+
+                            client.newCall(insertRequest).execute();
+                        }
+                    } else {
+                        // If get fails, try insert
+                        json.put("login_count", 0);
+                        json.put("hours_watched", hoursWatched);
+                        json.put("videos_watched", videosWatched);
+
+                        Request insertRequest = new Request.Builder()
+                                .url(SUPABASE_URL + "/rest/v1/user_activity_logs")
+                                .addHeader("apikey", SUPABASE_KEY)
+                                .addHeader("Authorization", "Bearer " + token)
+                                .addHeader("Content-Type", "application/json")
+                                .addHeader("Prefer", "resolution=merge-duplicates")
+                                .post(RequestBody.create(json.toString(), MediaType.parse("application/json")))
+                                .build();
+
+                        client.newCall(insertRequest).execute();
+                    }
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        });
+    }
+
+    /**
+     * Track user login for streak calculation
+     * Call this when MainActivity starts or when user logs in
+     */
+    public static void trackLogin() {
+        executor.execute(() -> {
+            try {
+                String userId = getUserId();
+                String token = getAccessToken();
+
+                if (userId.isEmpty() || token.isEmpty()) {
+                    return;
+                }
+
+                String today = java.time.LocalDate.now().toString();
+
+                // Check if record exists for today
+                Request getRequest = new Request.Builder()
+                        .url(SUPABASE_URL + "/rest/v1/user_activity_logs?user_id=eq." + userId 
+                            + "&activity_date=eq." + today + "&select=login_count")
+                        .addHeader("apikey", SUPABASE_KEY)
+                        .addHeader("Authorization", "Bearer " + token)
+                        .get()
+                        .build();
+
+                try (Response getResponse = client.newCall(getRequest).execute()) {
+                    JSONObject json = new JSONObject();
+                    json.put("user_id", userId);
+                    json.put("activity_date", today);
+
+                    if (getResponse.isSuccessful() && getResponse.body() != null) {
+                        String body = getResponse.body().string();
+                        JSONArray existing = new JSONArray(body);
+                        
+                        if (existing.length() > 0) {
+                            // Update existing record - increment login_count
+                            JSONObject existingRecord = existing.getJSONObject(0);
+                            int currentLoginCount = existingRecord.optInt("login_count", 0);
+                            json.put("login_count", currentLoginCount + 1);
+                            
+                            // Get other fields to preserve them
+                            Request getFullRequest = new Request.Builder()
+                                    .url(SUPABASE_URL + "/rest/v1/user_activity_logs?user_id=eq." + userId 
+                                        + "&activity_date=eq." + today)
+                                    .addHeader("apikey", SUPABASE_KEY)
+                                    .addHeader("Authorization", "Bearer " + token)
+                                    .get()
+                                    .build();
+                            
+                            try (Response fullResponse = client.newCall(getFullRequest).execute()) {
+                                if (fullResponse.isSuccessful() && fullResponse.body() != null) {
+                                    JSONArray fullRecords = new JSONArray(fullResponse.body().string());
+                                    if (fullRecords.length() > 0) {
+                                        JSONObject fullRecord = fullRecords.getJSONObject(0);
+                                        json.put("hours_watched", fullRecord.optDouble("hours_watched", 0.0));
+                                        json.put("videos_watched", fullRecord.optInt("videos_watched", 0));
+                                    }
+                                }
+                            }
+
+                            Request patchRequest = new Request.Builder()
+                                    .url(SUPABASE_URL + "/rest/v1/user_activity_logs?user_id=eq." + userId 
+                                        + "&activity_date=eq." + today)
+                                    .addHeader("apikey", SUPABASE_KEY)
+                                    .addHeader("Authorization", "Bearer " + token)
+                                    .addHeader("Content-Type", "application/json")
+                                    .addHeader("Prefer", "return=minimal")
+                                    .patch(RequestBody.create(json.toString(), MediaType.parse("application/json")))
+                                    .build();
+
+                            client.newCall(patchRequest).execute();
+                        } else {
+                            // Insert new record
+                            json.put("login_count", 1);
+                            json.put("hours_watched", 0.0);
+                            json.put("videos_watched", 0);
+
+                            Request insertRequest = new Request.Builder()
+                                    .url(SUPABASE_URL + "/rest/v1/user_activity_logs")
+                                    .addHeader("apikey", SUPABASE_KEY)
+                                    .addHeader("Authorization", "Bearer " + token)
+                                    .addHeader("Content-Type", "application/json")
+                                    .addHeader("Prefer", "resolution=merge-duplicates")
+                                    .post(RequestBody.create(json.toString(), MediaType.parse("application/json")))
+                                    .build();
+
+                            client.newCall(insertRequest).execute();
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        });
+    }
+
+    public interface StreakCallback {
+        void onStreakLoaded(int streakDays);
+    }
+
+    /**
+     * Get login streak for current user using PostgreSQL function
+     */
+    public static void getLoginStreak(StreakCallback callback) {
+        executor.execute(() -> {
+            try {
+                String userId = getUserId();
+                String token = getAccessToken();
+
+                if (userId.isEmpty() || token.isEmpty()) {
+                    callback.onStreakLoaded(0);
+                    return;
+                }
+
+                // Call the PostgreSQL function
+                JSONObject json = new JSONObject();
+                json.put("p_user_id", userId);
+
+                Request request = new Request.Builder()
+                        .url(SUPABASE_URL + "/rest/v1/rpc/calculate_login_streak")
+                        .addHeader("apikey", SUPABASE_KEY)
+                        .addHeader("Authorization", "Bearer " + token)
+                        .addHeader("Content-Type", "application/json")
+                        .post(RequestBody.create(json.toString(), MediaType.parse("application/json")))
+                        .build();
+
+                try (Response response = client.newCall(request).execute()) {
+                    if (response.isSuccessful() && response.body() != null) {
+                        String body = response.body().string().trim();
+                        // Remove quotes if present
+                        body = body.replace("\"", "");
+                        int streak = Integer.parseInt(body);
+                        callback.onStreakLoaded(streak);
+                    } else {
+                        callback.onStreakLoaded(0);
+                    }
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+                callback.onStreakLoaded(0);
+            }
+        });
     }
 }

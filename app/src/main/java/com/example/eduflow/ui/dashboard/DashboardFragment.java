@@ -45,6 +45,13 @@ public class DashboardFragment extends Fragment {
         setupQuizHistory();
     }
 
+    @Override
+    public void onResume() {
+        super.onResume();
+        // Refresh data when fragment becomes visible
+        fetchData();
+    }
+
     private void setupClickListeners() {
         binding.headerQuizHistory.setOnClickListener(v -> toggleHistory());
     }
@@ -63,8 +70,10 @@ public class DashboardFragment extends Fragment {
                         return;
 
                     // Time Stats
-                    binding.tvTotalHours.setText(String.format("%.1fh", stats.totalHours));
-                    binding.tvAvgPerDay.setText(String.format("%.1fh", stats.avgHoursPerDay));
+                    // Convert hours to minutes (totalHours is in hours, multiply by 60)
+                    int totalMinutes = (int) (stats.totalHours * 60);
+                    binding.tvTotalHours.setText(String.format("%dm", totalMinutes));
+                    binding.tvAvgPerDay.setText(String.valueOf(stats.totalVideosWatched));
                     binding.tvStreak.setText(String.valueOf(stats.streakDays));
 
                     // Quiz Stats

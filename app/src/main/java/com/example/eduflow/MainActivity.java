@@ -34,6 +34,9 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
 
+        // Track login for streak calculation
+        SupabaseManager.trackLogin();
+
         EdgeToEdge.enable(this);
         binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
