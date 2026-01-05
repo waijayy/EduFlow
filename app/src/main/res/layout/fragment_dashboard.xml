@@ -59,7 +59,7 @@
                 app:cardBackgroundColor="@android:color/transparent"
                 app:cardCornerRadius="16dp"
                 app:cardElevation="0dp"
-                app:strokeColor="@color/card_green_border"
+                app:strokeColor="@color/card_border_dark_gray"
                 app:strokeWidth="2dp">
 
                 <LinearLayout
@@ -99,7 +99,7 @@
                 app:cardBackgroundColor="@android:color/transparent"
                 app:cardCornerRadius="16dp"
                 app:cardElevation="0dp"
-                app:strokeColor="@color/card_purple_border"
+                app:strokeColor="@color/card_border_dark_gray"
                 app:strokeWidth="2dp">
 
                 <LinearLayout
@@ -139,7 +139,7 @@
                 app:cardBackgroundColor="@android:color/transparent"
                 app:cardCornerRadius="16dp"
                 app:cardElevation="0dp"
-                app:strokeColor="@color/card_orange_border"
+                app:strokeColor="@color/card_border_dark_gray"
                 app:strokeWidth="2dp">
 
                 <LinearLayout
@@ -202,7 +202,7 @@
                 app:cardBackgroundColor="@android:color/transparent"
                 app:cardCornerRadius="16dp"
                 app:cardElevation="0dp"
-                app:strokeColor="@color/card_orange_border"
+                app:strokeColor="@color/card_border_dark_gray"
                 app:strokeWidth="2dp">
 
                 <LinearLayout
@@ -242,7 +242,7 @@
                 app:cardBackgroundColor="@android:color/transparent"
                 app:cardCornerRadius="16dp"
                 app:cardElevation="0dp"
-                app:strokeColor="@color/card_blue_border"
+                app:strokeColor="@color/card_border_dark_gray"
                 app:strokeWidth="2dp">
 
                 <LinearLayout
@@ -282,7 +282,7 @@
                 app:cardBackgroundColor="@android:color/transparent"
                 app:cardCornerRadius="16dp"
                 app:cardElevation="0dp"
-                app:strokeColor="@color/error_red"
+                app:strokeColor="@color/card_border_dark_gray"
                 app:strokeWidth="2dp">
 
                 <LinearLayout
@@ -323,7 +323,7 @@
             app:cardBackgroundColor="@android:color/transparent"
             app:cardCornerRadius="16dp"
             app:cardElevation="0dp"
-            app:strokeColor="@color/card_blue_border"
+            app:strokeColor="@color/card_border_dark_gray"
             app:strokeWidth="1dp">
 
             <LinearLayout
@@ -357,7 +357,7 @@
             app:cardBackgroundColor="@android:color/transparent"
             app:cardCornerRadius="24dp"
             app:cardElevation="2dp"
-            app:strokeColor="@color/primary_cyan"
+            app:strokeColor="@color/card_border_dark_gray"
             app:strokeWidth="2dp">
 
             <LinearLayout
