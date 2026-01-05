@@ -12,17 +12,31 @@ import androidx.fragment.app.Fragment;
 import androidx.viewpager2.widget.ViewPager2;
 
 import com.example.eduflow.QuizActivity;
+import com.example.eduflow.R;
 import com.example.eduflow.adapters.VideoAdapter;
 import com.example.eduflow.databinding.FragmentHomeBinding;
 import com.example.eduflow.models.Video;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.Random;
 
 public class HomeFragment extends Fragment {
 
     private FragmentHomeBinding binding;
     private VideoAdapter videoAdapter;
+
+    // Category configurations: folder name -> display info
+    private static final String[][] CATEGORIES = {
+            { "math", "Math", "@math_tutor" },
+            { "photography", "Photography", "@photo_pro" },
+            { "programming", "Programming", "@code_master" },
+            { "business", "Business", "@biz_guru" },
+            { "design", "Design", "@design_hub" },
+            { "english", "English", "@english_ace" }
+    };
 
     @Nullable
     @Override
@@ -39,53 +53,11 @@ public class HomeFragment extends Fragment {
     }
 
     private void setupVideoFeed() {
-        // Sample videos for demo
-        List<Video> videos = Arrays.asList(
-                new Video(
-                        "1",
-                        "React Hooks Explained in 60 Seconds",
-                        "@sarah_dev",
-                        "",
-                        "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
-                        12500,
-                        234,
-                        Arrays.asList("React", "JavaScript", "WebDev")),
-                new Video(
-                        "2",
-                        "Python List Comprehension Tutorial",
-                        "@code_master",
-                        "",
-                        "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4",
-                        8900,
-                        156,
-                        Arrays.asList("Python", "Programming", "Tips")),
-                new Video(
-                        "3",
-                        "CSS Grid Layout Made Easy",
-                        "@design_guru",
-                        "",
-                        "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
-                        5600,
-                        89,
-                        Arrays.asList("CSS", "WebDesign", "Frontend")),
-                new Video(
-                        "4",
-                        "Git Commands You Must Know",
-                        "@dev_tips",
-                        "",
-                        "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4",
-                        15200,
-                        312,
-                        Arrays.asList("Git", "DevTools", "Programming")),
-                new Video(
-                        "5",
-                        "JavaScript Async/Await Explained",
-                        "@js_ninja",
-                        "",
-                        "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4",
-                        9800,
-                        201,
-                        Arrays.asList("JavaScript", "Async", "WebDev")));
+        // Load videos dynamically from raw folder categories
+        List<Video> videos = loadVideosFromRawCategories();
+
+        // Shuffle videos for a mixed "For You" feed
+        Collections.shuffle(videos);
 
         videoAdapter = new VideoAdapter(videos, this::navigateToQuiz);
 
@@ -125,6 +97,54 @@ public class HomeFragment extends Fragment {
             intent.putExtra(QuizActivity.EXTRA_VIDEO_TITLE, video.getTitle());
             startActivity(intent);
         }
+    }
+
+    /**
+     * Load videos from raw folder categories.
+     * Each category folder (math, photography, etc.) contains video files named
+     * vid1.mp4, vid2.mp4, etc.
+     * This method uses reflection to find raw resources that match the pattern
+     * category_vid#
+     */
+    private List<Video> loadVideosFromRawCategories() {
+        List<Video> videos = new ArrayList<>();
+        Random random = new Random();
+
+        if (getContext() == null)
+            return videos;
+
+        String packageName = getContext().getPackageName();
+        int videoIndex = 0;
+
+        for (String[] categoryInfo : CATEGORIES) {
+            String folderName = categoryInfo[0];
+            String displayName = categoryInfo[1];
+            String author = categoryInfo[2];
+
+            // Check for vid1, vid2, vid3, etc. in each category
+            for (int i = 1; i <= 10; i++) {
+                String resourceName = folderName + "_vid" + i;
+                int resourceId = getContext().getResources().getIdentifier(resourceName, "raw", packageName);
+
+                if (resourceId != 0) {
+                    videoIndex++;
+                    String videoUri = "android.resource://" + packageName + "/" + resourceId;
+
+                    videos.add(new Video(
+                            String.valueOf(videoIndex),
+                            displayName + " Tutorial #" + i,
+                            author,
+                            "",
+                            videoUri,
+                            random.nextInt(10000) + 1000, // Random likes
+                            random.nextInt(500) + 50, // Random comments
+                            Arrays.asList(displayName, "Learning", "EduFlow"),
+                            folderName));
+                }
+            }
+        }
+
+        return videos;
     }
 
     @Override

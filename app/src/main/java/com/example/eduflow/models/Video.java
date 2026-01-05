@@ -11,9 +11,10 @@ public class Video {
     private int likes;
     private int comments;
     private List<String> tags;
+    private String category;
 
     public Video(String id, String title, String author, String thumbnailUrl, String videoUrl, int likes, int comments,
-            List<String> tags) {
+            List<String> tags, String category) {
         this.id = id;
         this.title = title;
         this.author = author;
@@ -22,6 +23,7 @@ public class Video {
         this.likes = likes;
         this.comments = comments;
         this.tags = tags;
+        this.category = category;
     }
 
     public String getId() {
@@ -54,5 +56,9 @@ public class Video {
 
     public List<String> getTags() {
         return tags;
+    }
+
+    public String getCategory() {
+        return category;
     }
 }
