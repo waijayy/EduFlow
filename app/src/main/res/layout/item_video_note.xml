@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:paddingBottom="24dp">
+
+    <!-- Timestamp Label -->
+    <TextView
+        android:id="@+id/tvTimestamp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="0:15"
+        android:textColor="@color/primary_cyan"
+        android:textSize="16sp"
+        android:textStyle="bold" />
+
+    <!-- Note Content -->
+    <TextView
+        android:id="@+id/tvNoteContent"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="Note content here"
+        android:textColor="@color/white"
+        android:textSize="18sp"
+        android:lineSpacingMultiplier="1.2" />
+
+</LinearLayout>

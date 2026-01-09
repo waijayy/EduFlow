@@ -293,16 +293,18 @@ public class SupabaseManager {
                         java.util.Collections.reverse(recent);
                         stats.recentScores = recent;
                     }
-                    
+
                     // Fetch total videos watched and hours watched
                     try {
                         Request videoRequest = new Request.Builder()
-                                .url(SUPABASE_URL + "/rest/v1/video_watches?select=video_id,watch_duration_seconds&user_id=eq." + userId)
+                                .url(SUPABASE_URL
+                                        + "/rest/v1/video_watches?select=video_id,watch_duration_seconds&user_id=eq."
+                                        + userId)
                                 .addHeader("apikey", SUPABASE_KEY)
                                 .addHeader("Authorization", "Bearer " + token)
                                 .get()
                                 .build();
-                        
+
                         try (Response videoResponse = client.newCall(videoRequest).execute()) {
                             if (videoResponse.isSuccessful() && videoResponse.body() != null) {
                                 String videoBody = videoResponse.body().string();
@@ -310,18 +312,18 @@ public class SupabaseManager {
                                 // Count unique videos watched and sum watch duration
                                 Set<String> uniqueVideos = new HashSet<>();
                                 long totalWatchSeconds = 0;
-                                
+
                                 for (int i = 0; i < videoWatches.length(); i++) {
                                     JSONObject watch = videoWatches.getJSONObject(i);
                                     String videoId = watch.optString("video_id", "");
                                     int watchDuration = watch.optInt("watch_duration_seconds", 0);
-                                    
+
                                     if (!videoId.isEmpty()) {
                                         uniqueVideos.add(videoId);
                                     }
                                     totalWatchSeconds += watchDuration;
                                 }
-                                
+
                                 stats.totalVideosWatched = uniqueVideos.size();
                                 stats.totalHours = totalWatchSeconds / 3600.0f;
                             }
@@ -333,12 +335,12 @@ public class SupabaseManager {
                         // Table might not exist yet, keep default values
                         e.printStackTrace();
                     }
-                    
+
                     // Fetch login streak synchronously (inline)
                     try {
                         JSONObject streakJson = new JSONObject();
                         streakJson.put("p_user_id", userId);
-                        
+
                         Request streakRequest = new Request.Builder()
                                 .url(SUPABASE_URL + "/rest/v1/rpc/calculate_login_streak")
                                 .addHeader("apikey", SUPABASE_KEY)
@@ -346,7 +348,7 @@ public class SupabaseManager {
                                 .addHeader("Content-Type", "application/json")
                                 .post(RequestBody.create(streakJson.toString(), MediaType.parse("application/json")))
                                 .build();
-                        
+
                         try (Response streakResponse = client.newCall(streakRequest).execute()) {
                             if (streakResponse.isSuccessful() && streakResponse.body() != null) {
                                 String streakBody = streakResponse.body().string().trim().replace("\"", "");
@@ -360,7 +362,7 @@ public class SupabaseManager {
                         // Function might not exist yet, keep default
                         e.printStackTrace();
                     }
-                    
+
                     callback.onStatsLoaded(stats);
                 }
             } catch (Exception e) {
@@ -455,21 +457,21 @@ public class SupabaseManager {
      * Upsert video watch record (insert or update if exists)
      * Uses PostgreSQL ON CONFLICT to avoid duplicates
      */
-    public static void upsertVideoWatch(String videoId, int watchDurationSeconds, 
-                                         int videoDurationSeconds, float watchPercentage, 
-                                         boolean completed) {
+    public static void upsertVideoWatch(String videoId, int watchDurationSeconds,
+            int videoDurationSeconds, float watchPercentage,
+            boolean completed) {
         executor.execute(() -> {
             try {
                 String userId = getUserId();
                 String token = getAccessToken();
 
                 Log.d("SupabaseManager", String.format(
-                    "upsertVideoWatch called: videoId=%s, watchDuration=%ds, videoDuration=%ds, userId=%s",
-                    videoId, watchDurationSeconds, videoDurationSeconds, userId
-                ));
+                        "upsertVideoWatch called: videoId=%s, watchDuration=%ds, videoDuration=%ds, userId=%s",
+                        videoId, watchDurationSeconds, videoDurationSeconds, userId));
 
                 if (userId.isEmpty() || token.isEmpty()) {
-                    Log.e("SupabaseManager", "Missing userId or token - userId: " + userId + ", token empty: " + token.isEmpty());
+                    Log.e("SupabaseManager",
+                            "Missing userId or token - userId: " + userId + ", token empty: " + token.isEmpty());
                     return;
                 }
 
@@ -499,22 +501,19 @@ public class SupabaseManager {
                 try (Response response = client.newCall(request).execute()) {
                     int statusCode = response.code();
                     String responseBody = response.body() != null ? response.body().string() : "No response body";
-                    
+
                     Log.d("SupabaseManager", String.format(
-                        "Response status: %d, body: %s", statusCode, responseBody
-                    ));
+                            "Response status: %d, body: %s", statusCode, responseBody));
 
                     if (!response.isSuccessful()) {
                         Log.e("SupabaseManager", String.format(
-                            "Failed to upsert video watch - Status: %d, Error: %s",
-                            statusCode, responseBody
-                        ));
+                                "Failed to upsert video watch - Status: %d, Error: %s",
+                                statusCode, responseBody));
                         System.err.println("Failed to upsert video watch: " + responseBody);
                     } else {
                         Log.d("SupabaseManager", String.format(
-                            "Successfully saved video watch: videoId=%s, duration=%ds",
-                            videoId, watchDurationSeconds
-                        ));
+                                "Successfully saved video watch: videoId=%s, duration=%ds",
+                                videoId, watchDurationSeconds));
                         // Update daily activity log with hours watched
                         float hoursWatched = watchDurationSeconds / 3600.0f;
                         updateDailyActivity(hoursWatched, 1); // 1 video watched
@@ -548,8 +547,8 @@ public class SupabaseManager {
 
                 // First, try to get existing record
                 Request getRequest = new Request.Builder()
-                        .url(SUPABASE_URL + "/rest/v1/user_activity_logs?user_id=eq." + userId 
-                            + "&activity_date=eq." + today + "&select=login_count,hours_watched,videos_watched")
+                        .url(SUPABASE_URL + "/rest/v1/user_activity_logs?user_id=eq." + userId
+                                + "&activity_date=eq." + today + "&select=login_count,hours_watched,videos_watched")
                         .addHeader("apikey", SUPABASE_KEY)
                         .addHeader("Authorization", "Bearer " + token)
                         .get()
@@ -563,22 +562,22 @@ public class SupabaseManager {
                     if (getResponse.isSuccessful() && getResponse.body() != null) {
                         String body = getResponse.body().string();
                         JSONArray existing = new JSONArray(body);
-                        
+
                         if (existing.length() > 0) {
                             // Update existing record - increment values
                             JSONObject existingRecord = existing.getJSONObject(0);
                             int currentLoginCount = existingRecord.optInt("login_count", 0);
                             float currentHours = (float) existingRecord.optDouble("hours_watched", 0.0);
                             int currentVideos = existingRecord.optInt("videos_watched", 0);
-                            
+
                             json.put("login_count", currentLoginCount); // Keep existing, login tracked separately
                             json.put("hours_watched", currentHours + hoursWatched);
                             json.put("videos_watched", currentVideos + videosWatched);
 
                             // Use PATCH to update
                             Request patchRequest = new Request.Builder()
-                                    .url(SUPABASE_URL + "/rest/v1/user_activity_logs?user_id=eq." + userId 
-                                        + "&activity_date=eq." + today)
+                                    .url(SUPABASE_URL + "/rest/v1/user_activity_logs?user_id=eq." + userId
+                                            + "&activity_date=eq." + today)
                                     .addHeader("apikey", SUPABASE_KEY)
                                     .addHeader("Authorization", "Bearer " + token)
                                     .addHeader("Content-Type", "application/json")
@@ -646,8 +645,8 @@ public class SupabaseManager {
 
                 // Check if record exists for today
                 Request getRequest = new Request.Builder()
-                        .url(SUPABASE_URL + "/rest/v1/user_activity_logs?user_id=eq." + userId 
-                            + "&activity_date=eq." + today + "&select=login_count")
+                        .url(SUPABASE_URL + "/rest/v1/user_activity_logs?user_id=eq." + userId
+                                + "&activity_date=eq." + today + "&select=login_count")
                         .addHeader("apikey", SUPABASE_KEY)
                         .addHeader("Authorization", "Bearer " + token)
                         .get()
@@ -661,22 +660,22 @@ public class SupabaseManager {
                     if (getResponse.isSuccessful() && getResponse.body() != null) {
                         String body = getResponse.body().string();
                         JSONArray existing = new JSONArray(body);
-                        
+
                         if (existing.length() > 0) {
                             // Update existing record - increment login_count
                             JSONObject existingRecord = existing.getJSONObject(0);
                             int currentLoginCount = existingRecord.optInt("login_count", 0);
                             json.put("login_count", currentLoginCount + 1);
-                            
+
                             // Get other fields to preserve them
                             Request getFullRequest = new Request.Builder()
-                                    .url(SUPABASE_URL + "/rest/v1/user_activity_logs?user_id=eq." + userId 
-                                        + "&activity_date=eq." + today)
+                                    .url(SUPABASE_URL + "/rest/v1/user_activity_logs?user_id=eq." + userId
+                                            + "&activity_date=eq." + today)
                                     .addHeader("apikey", SUPABASE_KEY)
                                     .addHeader("Authorization", "Bearer " + token)
                                     .get()
                                     .build();
-                            
+
                             try (Response fullResponse = client.newCall(getFullRequest).execute()) {
                                 if (fullResponse.isSuccessful() && fullResponse.body() != null) {
                                     JSONArray fullRecords = new JSONArray(fullResponse.body().string());
@@ -689,8 +688,8 @@ public class SupabaseManager {
                             }
 
                             Request patchRequest = new Request.Builder()
-                                    .url(SUPABASE_URL + "/rest/v1/user_activity_logs?user_id=eq." + userId 
-                                        + "&activity_date=eq." + today)
+                                    .url(SUPABASE_URL + "/rest/v1/user_activity_logs?user_id=eq." + userId
+                                            + "&activity_date=eq." + today)
                                     .addHeader("apikey", SUPABASE_KEY)
                                     .addHeader("Authorization", "Bearer " + token)
                                     .addHeader("Content-Type", "application/json")
@@ -768,6 +767,116 @@ public class SupabaseManager {
             } catch (Exception e) {
                 e.printStackTrace();
                 callback.onStreakLoaded(0);
+            }
+        });
+    }
+
+    // =====================================================
+    // VIDEO NOTES METHODS
+    // =====================================================
+
+    public interface VideoNotesCallback {
+        void onNotesLoaded(java.util.List<com.example.eduflow.models.VideoNote> notes);
+    }
+
+    public interface SaveNoteCallback {
+        void onComplete(boolean success);
+    }
+
+    /**
+     * Save a new video note to Supabase
+     */
+    public static void saveVideoNote(String videoId, int timestampSeconds, String noteContent,
+            SaveNoteCallback callback) {
+        executor.execute(() -> {
+            try {
+                String userId = getUserId();
+                String token = getAccessToken();
+
+                if (userId.isEmpty() || token.isEmpty()) {
+                    Log.e("SupabaseManager", "saveVideoNote: Missing userId or token");
+                    callback.onComplete(false);
+                    return;
+                }
+
+                JSONObject json = new JSONObject();
+                json.put("user_id", userId);
+                json.put("video_id", videoId);
+                json.put("timestamp_seconds", timestampSeconds);
+                json.put("note_content", noteContent);
+
+                Request request = new Request.Builder()
+                        .url(SUPABASE_URL + "/rest/v1/video_notes")
+                        .addHeader("apikey", SUPABASE_KEY)
+                        .addHeader("Authorization", "Bearer " + token)
+                        .addHeader("Content-Type", "application/json")
+                        .addHeader("Prefer", "return=minimal")
+                        .post(RequestBody.create(json.toString(), MediaType.parse("application/json")))
+                        .build();
+
+                try (Response response = client.newCall(request).execute()) {
+                    if (response.isSuccessful()) {
+                        Log.d("SupabaseManager", "Video note saved successfully");
+                        callback.onComplete(true);
+                    } else {
+                        String errorBody = response.body() != null ? response.body().string() : "No error body";
+                        Log.e("SupabaseManager", "Failed to save video note: " + errorBody);
+                        callback.onComplete(false);
+                    }
+                }
+            } catch (Exception e) {
+                Log.e("SupabaseManager", "Exception saving video note", e);
+                callback.onComplete(false);
+            }
+        });
+    }
+
+    /**
+     * Get all notes for a specific video
+     */
+    public static void getVideoNotes(String videoId, VideoNotesCallback callback) {
+        executor.execute(() -> {
+            try {
+                String userId = getUserId();
+                String token = getAccessToken();
+
+                if (userId.isEmpty() || token.isEmpty()) {
+                    callback.onNotesLoaded(new java.util.ArrayList<>());
+                    return;
+                }
+
+                // Fetch notes for this video, ordered by timestamp
+                Request request = new Request.Builder()
+                        .url(SUPABASE_URL
+                                + "/rest/v1/video_notes?select=id,video_id,timestamp_seconds,note_content,created_at&user_id=eq."
+                                + userId + "&video_id=eq." + videoId + "&order=timestamp_seconds.asc")
+                        .addHeader("apikey", SUPABASE_KEY)
+                        .addHeader("Authorization", "Bearer " + token)
+                        .get()
+                        .build();
+
+                try (Response response = client.newCall(request).execute()) {
+                    java.util.List<com.example.eduflow.models.VideoNote> notes = new java.util.ArrayList<>();
+                    if (response.isSuccessful() && response.body() != null) {
+                        String responseBody = response.body().string();
+                        JSONArray results = new JSONArray(responseBody);
+
+                        for (int i = 0; i < results.length(); i++) {
+                            JSONObject obj = results.getJSONObject(i);
+                            String id = obj.optString("id", "");
+                            String vId = obj.optString("video_id", "");
+                            int timestamp = obj.optInt("timestamp_seconds", 0);
+                            String content = obj.optString("note_content", "");
+                            String createdAt = obj.optString("created_at", "");
+
+                            notes.add(new com.example.eduflow.models.VideoNote(id, vId, timestamp, content, createdAt));
+                        }
+                    }
+                    callback.onNotesLoaded(notes);
+                }
+            } catch (Exception e) {
+                Log.e("SupabaseManager", "Exception fetching video notes", e);
+                callback.onNotesLoaded(new java.util.ArrayList<>());
             }
         });
     }

@@ -35,6 +35,12 @@
             android:name=".QuizActivity"
             android:exported="false"
             android:theme="@style/Theme.EduFlow" />
+        
+        <!-- Video Notes Activity -->
+        <activity
+            android:name=".VideoNotesActivity"
+            android:exported="false"
+            android:theme="@style/Theme.EduFlow" />
             
     </application>
 

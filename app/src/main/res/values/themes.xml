@@ -55,4 +55,11 @@
         <item name="cardCornerRadius">16dp</item>
         <item name="cardElevation">0dp</item>
     </style>
+    
+    <!-- Dialog Style -->
+    <style name="Theme.EduFlow.Dialog" parent="Theme.Material3.Dark.Dialog">
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:backgroundDimEnabled">true</item>
+        <item name="colorSurface">@color/background_card</item>
+    </style>
 </resources>

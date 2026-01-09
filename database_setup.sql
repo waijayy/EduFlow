@@ -250,3 +250,60 @@ GRANT SELECT ON daily_video_summary TO authenticated;
 --    while still respecting RLS policies
 -- =====================================================
 
+-- =====================================================
+-- 6. VIDEO_NOTES TABLE
+-- =====================================================
+-- Stores timestamped notes for videos
+
+CREATE TABLE IF NOT EXISTS video_notes (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  video_id TEXT NOT NULL,
+  timestamp_seconds INTEGER NOT NULL DEFAULT 0,
+  note_content TEXT NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Indexes for faster queries
+CREATE INDEX IF NOT EXISTS idx_video_notes_user_id ON video_notes(user_id);
+CREATE INDEX IF NOT EXISTS idx_video_notes_video_id ON video_notes(video_id);
+CREATE INDEX IF NOT EXISTS idx_video_notes_user_video ON video_notes(user_id, video_id);
+
+-- Trigger to update updated_at timestamp
+CREATE OR REPLACE FUNCTION update_video_notes_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = NOW();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trigger_update_video_notes_updated_at
+  BEFORE UPDATE ON video_notes
+  FOR EACH ROW
+  EXECUTE FUNCTION update_video_notes_updated_at();
+
+-- Enable Row Level Security (RLS)
+ALTER TABLE video_notes ENABLE ROW LEVEL SECURITY;
+
+-- Policy: Users can only see their own notes
+CREATE POLICY "Users can view own video notes"
+  ON video_notes FOR SELECT
+  USING (auth.uid() = user_id);
+
+-- Policy: Users can insert their own notes
+CREATE POLICY "Users can insert own video notes"
+  ON video_notes FOR INSERT
+  WITH CHECK (auth.uid() = user_id);
+
+-- Policy: Users can update their own notes
+CREATE POLICY "Users can update own video notes"
+  ON video_notes FOR UPDATE
+  USING (auth.uid() = user_id);
+
+-- Policy: Users can delete their own notes
+CREATE POLICY "Users can delete own video notes"
+  ON video_notes FOR DELETE
+  USING (auth.uid() = user_id);
+
