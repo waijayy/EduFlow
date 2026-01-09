@@ -73,7 +73,6 @@ public class VideoAdapter extends RecyclerView.Adapter<VideoAdapter.VideoViewHol
         holder.binding.tvTitle.setText(video.getTitle());
         holder.binding.tvAuthor.setText(video.getAuthor());
         holder.binding.tvLikes.setText(formatCount(video.getLikes()));
-        holder.binding.tvComments.setText(formatCount(video.getComments()));
 
         // Setup tags
         holder.binding.tagsContainer.removeAllViews();
@@ -105,9 +104,26 @@ public class VideoAdapter extends RecyclerView.Adapter<VideoAdapter.VideoViewHol
         // Setup player listener for tracking
         setupVideoTracking(holder, position, video);
 
-        // Click listeners
+        // Like button - demo functionality (visual only, no database)
+        final int[] currentLikes = { video.getLikes() };
+        final boolean[] isLiked = { false };
+
+        holder.binding.btnLike.setSelected(false);
         holder.binding.btnLike.setOnClickListener(v -> {
-            holder.binding.btnLike.setSelected(!holder.binding.btnLike.isSelected());
+            isLiked[0] = !isLiked[0];
+            holder.binding.btnLike.setSelected(isLiked[0]);
+
+            // Update like count visually
+            if (isLiked[0]) {
+                currentLikes[0] = video.getLikes() + 1;
+                holder.binding.btnLike.setColorFilter(
+                        holder.itemView.getContext().getResources().getColor(android.R.color.holo_red_light, null));
+            } else {
+                currentLikes[0] = video.getLikes();
+                holder.binding.btnLike.setColorFilter(
+                        holder.itemView.getContext().getResources().getColor(android.R.color.white, null));
+            }
+            holder.binding.tvLikes.setText(formatCount(currentLikes[0]));
         });
 
         // Note button - open notes activity

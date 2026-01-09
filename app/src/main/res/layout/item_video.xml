@@ -98,7 +98,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginEnd="16dp"
-        android:layout_marginBottom="24dp"
+        android:layout_marginBottom="100dp"
         android:gravity="center_horizontal"
         android:orientation="vertical"
         app:layout_constraintBottom_toBottomOf="parent"
@@ -107,10 +107,14 @@
         <!-- Like Button -->
         <ImageView
             android:id="@+id/btnLike"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
             android:padding="8dp"
             android:src="@drawable/ic_like"
+            android:shadowColor="#DD000000"
+            android:shadowDx="0"
+            android:shadowDy="3"
+            android:shadowRadius="8"
             app:tint="@color/white" />
 
         <TextView
@@ -118,43 +122,38 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:textColor="@color/white"
-            android:textSize="12sp" />
-
-        <!-- Comment Button -->
-        <ImageView
-            android:id="@+id/btnComment"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:layout_marginTop="16dp"
-            android:padding="8dp"
-            android:src="@drawable/ic_comment"
-            app:tint="@color/white" />
-
-        <TextView
-            android:id="@+id/tvComments"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textColor="@color/white"
-            android:textSize="12sp" />
-
-        <!-- Share Button -->
-        <ImageView
-            android:id="@+id/btnShare"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:layout_marginTop="16dp"
-            android:padding="8dp"
-            android:src="@drawable/ic_share"
-            app:tint="@color/white" />
+            android:textSize="12sp"
+            android:shadowColor="#CC000000"
+            android:shadowDx="0"
+            android:shadowDy="2"
+            android:shadowRadius="4" />
 
         <!-- Note Button -->
         <ImageView
             android:id="@+id/btnNote"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
             android:layout_marginTop="16dp"
             android:padding="8dp"
             android:src="@drawable/ic_note"
+            android:shadowColor="#DD000000"
+            android:shadowDx="0"
+            android:shadowDy="3"
+            android:shadowRadius="8"
+            app:tint="@color/white" />
+
+        <!-- Share Button -->
+        <ImageView
+            android:id="@+id/btnShare"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:layout_marginTop="16dp"
+            android:padding="8dp"
+            android:src="@drawable/ic_share"
+            android:shadowColor="#DD000000"
+            android:shadowDx="0"
+            android:shadowDy="3"
+            android:shadowRadius="8"
             app:tint="@color/white" />
 
     </LinearLayout>
