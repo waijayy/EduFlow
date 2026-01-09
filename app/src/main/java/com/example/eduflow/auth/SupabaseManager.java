@@ -243,6 +243,42 @@ public class SupabaseManager {
         void onAchievementsLoaded(List<Achievement> achievements);
     }
 
+    public static class QuizData {
+        public String id;
+        public String category;
+        public String title;
+        public String description;
+        public List<QuestionData> questions;
+
+        public QuizData(String id, String category, String title, String description) {
+            this.id = id;
+            this.category = category;
+            this.title = title;
+            this.description = description;
+            this.questions = new ArrayList<>();
+        }
+    }
+
+    public static class QuestionData {
+        public String questionText;
+        public List<String> options;
+        public int correctIndex;
+        public int points;
+        public int orderIndex;
+
+        public QuestionData(String questionText, List<String> options, int correctIndex, int points, int orderIndex) {
+            this.questionText = questionText;
+            this.options = options;
+            this.correctIndex = correctIndex;
+            this.points = points;
+            this.orderIndex = orderIndex;
+        }
+    }
+
+    public interface QuizCallback {
+        void onQuizLoaded(QuizData quiz);
+    }
+
     public static void getDashboardStats(DashboardStatsCallback callback) {
         executor.execute(() -> {
             try {
@@ -532,6 +568,84 @@ public class SupabaseManager {
             } catch (Exception e) {
                 e.printStackTrace();
                 callback.onQuizzesLoaded(new ArrayList<>());
+            }
+        });
+    }
+
+    public static void getQuizByCategory(String category, QuizCallback callback) {
+        executor.execute(() -> {
+            try {
+                String token = getAccessToken();
+
+                if (token.isEmpty()) {
+                    callback.onQuizLoaded(null);
+                    return;
+                }
+
+                // Fetch quiz by category
+                Request quizRequest = new Request.Builder()
+                        .url(SUPABASE_URL + "/rest/v1/quizzes?category=eq." + category)
+                        .addHeader("apikey", SUPABASE_KEY)
+                        .addHeader("Authorization", "Bearer " + token)
+                        .get()
+                        .build();
+
+                try (Response quizResponse = client.newCall(quizRequest).execute()) {
+                    if (!quizResponse.isSuccessful() || quizResponse.body() == null) {
+                        callback.onQuizLoaded(null);
+                        return;
+                    }
+
+                    JSONArray quizArray = new JSONArray(quizResponse.body().string());
+                    if (quizArray.length() == 0) {
+                        callback.onQuizLoaded(null);
+                        return;
+                    }
+
+                    JSONObject quizObj = quizArray.getJSONObject(0);
+                    String quizId = quizObj.getString("id");
+                    String quizTitle = quizObj.getString("title");
+                    String description = quizObj.optString("description", "");
+
+                    QuizData quizData = new QuizData(quizId, category, quizTitle, description);
+
+                    // Fetch questions for this quiz
+                    Request questionsRequest = new Request.Builder()
+                            .url(SUPABASE_URL + "/rest/v1/quiz_questions?quiz_id=eq." + quizId
+                                    + "&order=order_index.asc")
+                            .addHeader("apikey", SUPABASE_KEY)
+                            .addHeader("Authorization", "Bearer " + token)
+                            .get()
+                            .build();
+
+                    try (Response questionsResponse = client.newCall(questionsRequest).execute()) {
+                        if (questionsResponse.isSuccessful() && questionsResponse.body() != null) {
+                            JSONArray questionsArray = new JSONArray(questionsResponse.body().string());
+
+                            for (int i = 0; i < questionsArray.length(); i++) {
+                                JSONObject qObj = questionsArray.getJSONObject(i);
+                                String questionText = qObj.getString("question_text");
+                                JSONArray optionsJson = qObj.getJSONArray("options");
+                                int correctIndex = qObj.getInt("correct_index");
+                                int points = qObj.getInt("points");
+                                int orderIndex = qObj.getInt("order_index");
+
+                                List<String> options = new ArrayList<>();
+                                for (int j = 0; j < optionsJson.length(); j++) {
+                                    options.add(optionsJson.getString(j));
+                                }
+
+                                quizData.questions.add(new QuestionData(questionText, options, correctIndex,
+                                        points, orderIndex));
+                            }
+                        }
+                    }
+
+                    callback.onQuizLoaded(quizData);
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+                callback.onQuizLoaded(null);
             }
         });
     }

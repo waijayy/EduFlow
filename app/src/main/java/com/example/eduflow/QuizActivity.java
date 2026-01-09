@@ -48,11 +48,11 @@ public class QuizActivity extends AppCompatActivity {
         String videoId = getIntent().getStringExtra(EXTRA_VIDEO_ID);
         String videoTitle = getIntent().getStringExtra(EXTRA_VIDEO_TITLE);
 
-        // Create sample quiz based on video
-        currentQuiz = createSampleQuiz(videoId, videoTitle);
+        // Extract category from video ID (e.g., "math_1" -> "math")
+        String category = extractCategoryFromVideoId(videoId);
 
-        // Start with intro fragment
-        showIntroFragment();
+        // Fetch quiz from database by category
+        fetchQuizFromDatabase(category, videoId, videoTitle);
 
         setupGestureDetector();
     }
@@ -102,33 +102,60 @@ public class QuizActivity extends AppCompatActivity {
         return super.dispatchTouchEvent(ev);
     }
 
-    private Quiz createSampleQuiz(String videoId, String videoTitle) {
-        // Create sample questions based on the video topic
+    private String extractCategoryFromVideoId(String videoId) {
+        if (videoId == null || videoId.isEmpty()) {
+            return "programming"; // Default fallback
+        }
+        // Extract category from video ID format: "category_number" (e.g., "math_1" ->
+        // "math")
+        int underscoreIndex = videoId.lastIndexOf('_');
+        if (underscoreIndex > 0) {
+            return videoId.substring(0, underscoreIndex);
+        }
+        return "programming"; // Default fallback
+    }
+
+    private void fetchQuizFromDatabase(String category, String videoId, String videoTitle) {
+        // Show loading state (optional - could add a loading fragment)
+        com.example.eduflow.auth.SupabaseManager.getQuizByCategory(category, quizData -> {
+            runOnUiThread(() -> {
+                if (quizData != null && !quizData.questions.isEmpty()) {
+                    // Convert QuizData to Quiz model
+                    currentQuiz = convertQuizDataToQuiz(quizData, videoId);
+                } else {
+                    // Fallback: create a default quiz if none found
+                    currentQuiz = createFallbackQuiz(videoId, videoTitle, category);
+                }
+                // Start with intro fragment
+                showIntroFragment();
+            });
+        });
+    }
+
+    private Quiz convertQuizDataToQuiz(com.example.eduflow.auth.SupabaseManager.QuizData quizData,
+            String videoId) {
+        List<Question> questions = new ArrayList<>();
+        for (com.example.eduflow.auth.SupabaseManager.QuestionData qData : quizData.questions) {
+            questions.add(new Question(
+                    qData.questionText,
+                    qData.options,
+                    qData.correctIndex,
+                    qData.points));
+        }
+        return new Quiz(quizData.id + "_" + videoId, videoId, quizData.title, questions);
+    }
+
+    private Quiz createFallbackQuiz(String videoId, String videoTitle, String category) {
+        // Fallback quiz if database query fails
         List<Question> questions = Arrays.asList(
                 new Question(
-                        "What does the useState hook return?",
-                        Arrays.asList("A single value", "An array with two elements", "An object", "A function"),
-                        1, // Correct: "An array with two elements"
-                        10),
-                new Question(
-                        "When does useEffect run by default?",
-                        Arrays.asList("Only on mount", "On every render", "Only on unmount", "Never"),
-                        1, // Correct: "On every render"
-                        10),
-                new Question(
-                        "What is the purpose of the dependency array in useEffect?",
-                        Arrays.asList("To define state variables", "To control when the effect runs",
-                                "To import dependencies", "To export values"),
-                        1, // Correct: "To control when the effect runs"
+                        "This quiz is currently unavailable.",
+                        Arrays.asList("Try again later", "OK", "Close", "Exit"),
+                        1,
                         10));
 
-        String quizTitle = videoTitle != null ? videoTitle.replace("Explained", "Quiz") : "React Hooks Quiz";
-        quizTitle = quizTitle.replace("Tutorial", "Quiz");
-        if (!quizTitle.contains("Quiz")) {
-            quizTitle = quizTitle + " Quiz";
-        }
-
-        return new Quiz("quiz_" + videoId, videoId, quizTitle, questions);
+        String quizTitle = category.substring(0, 1).toUpperCase() + category.substring(1) + " Quiz";
+        return new Quiz("fallback_" + videoId, videoId, quizTitle, questions);
     }
 
     private void showIntroFragment() {
