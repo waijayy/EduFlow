@@ -56,6 +56,12 @@ public class ProfileFragment extends Fragment {
     }
 
     private void setupClickListeners() {
+        binding.btnMyNotes.setOnClickListener(v -> {
+            android.content.Intent intent = new android.content.Intent(getContext(),
+                    com.example.eduflow.MyNotesActivity.class);
+            startActivity(intent);
+        });
+
         binding.btnNotifications.setOnClickListener(v -> {
             // Handle notifications settings
         });

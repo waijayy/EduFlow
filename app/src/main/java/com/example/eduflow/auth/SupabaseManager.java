@@ -880,4 +880,103 @@ public class SupabaseManager {
             }
         });
     }
+
+    /**
+     * Get all notes for the current user, grouped by video
+     */
+    public interface AllNotesCallback {
+        void onNotesLoaded(java.util.List<com.example.eduflow.models.VideoNoteSummary> notes);
+    }
+
+    public static void getAllVideoNotes(AllNotesCallback callback) {
+        executor.execute(() -> {
+            try {
+                String userId = getUserId();
+                String token = getAccessToken();
+
+                Log.d("SupabaseManager",
+                        "getAllVideoNotes called - userId: " + userId + ", token empty: " + token.isEmpty());
+
+                if (userId.isEmpty() || token.isEmpty()) {
+                    Log.e("SupabaseManager", "getAllVideoNotes: Missing userId or token");
+                    callback.onNotesLoaded(new java.util.ArrayList<>());
+                    return;
+                }
+
+                String url = SUPABASE_URL
+                        + "/rest/v1/video_notes?select=id,video_id,timestamp_seconds,note_content,created_at&user_id=eq."
+                        + userId + "&order=created_at.desc";
+                Log.d("SupabaseManager", "getAllVideoNotes URL: " + url);
+
+                // Fetch all notes for this user, ordered by created_at desc
+                Request request = new Request.Builder()
+                        .url(url)
+                        .addHeader("apikey", SUPABASE_KEY)
+                        .addHeader("Authorization", "Bearer " + token)
+                        .get()
+                        .build();
+
+                try (Response response = client.newCall(request).execute()) {
+                    int statusCode = response.code();
+                    String responseBody = response.body() != null ? response.body().string() : "";
+
+                    Log.d("SupabaseManager",
+                            "getAllVideoNotes response - status: " + statusCode + ", body: " + responseBody);
+
+                    java.util.List<com.example.eduflow.models.VideoNoteSummary> summaries = new java.util.ArrayList<>();
+                    if (response.isSuccessful()) {
+                        JSONArray results = new JSONArray(responseBody);
+                        Log.d("SupabaseManager", "getAllVideoNotes found " + results.length() + " notes");
+
+                        // Group notes by video_id
+                        java.util.Map<String, java.util.List<JSONObject>> groupedNotes = new java.util.LinkedHashMap<>();
+
+                        for (int i = 0; i < results.length(); i++) {
+                            JSONObject obj = results.getJSONObject(i);
+                            String videoId = obj.optString("video_id", "");
+                            if (!videoId.isEmpty()) {
+                                if (!groupedNotes.containsKey(videoId)) {
+                                    groupedNotes.put(videoId, new java.util.ArrayList<>());
+                                }
+                                groupedNotes.get(videoId).add(obj);
+                            }
+                        }
+
+                        Log.d("SupabaseManager", "getAllVideoNotes grouped into " + groupedNotes.size() + " videos");
+
+                        // Create summaries for each video
+                        for (java.util.Map.Entry<String, java.util.List<JSONObject>> entry : groupedNotes.entrySet()) {
+                            String videoId = entry.getKey();
+                            java.util.List<JSONObject> videoNotes = entry.getValue();
+
+                            if (!videoNotes.isEmpty()) {
+                                // Get the first (most recent) note for preview
+                                JSONObject firstNote = videoNotes.get(0);
+                                String notePreview = firstNote.optString("note_content", "");
+                                String createdAt = firstNote.optString("created_at", "");
+
+                                // Generate a title based on video ID (in real app, you'd fetch video metadata)
+                                String videoTitle = "Video " + videoId;
+
+                                summaries.add(new com.example.eduflow.models.VideoNoteSummary(
+                                        videoId,
+                                        videoTitle,
+                                        notePreview,
+                                        videoNotes.size(),
+                                        createdAt));
+                            }
+                        }
+                    } else {
+                        Log.e("SupabaseManager", "getAllVideoNotes failed: " + responseBody);
+                    }
+
+                    Log.d("SupabaseManager", "getAllVideoNotes returning " + summaries.size() + " summaries");
+                    callback.onNotesLoaded(summaries);
+                }
+            } catch (Exception e) {
+                Log.e("SupabaseManager", "Exception fetching all video notes", e);
+                callback.onNotesLoaded(new java.util.ArrayList<>());
+            }
+        });
+    }
 }
