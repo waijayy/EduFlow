@@ -100,13 +100,6 @@ public class HomeFragment extends Fragment {
         }
     }
 
-    /**
-     * Load videos from raw folder categories.
-     * Each category folder (math, photography, etc.) contains video files named
-     * vid1.mp4, vid2.mp4, etc.
-     * This method uses reflection to find raw resources that match the pattern
-     * category_vid#
-     */
     private List<Video> loadVideosFromRawCategories() {
         List<Video> videos = new ArrayList<>();
         Random random = new Random();
@@ -115,7 +108,6 @@ public class HomeFragment extends Fragment {
             return videos;
 
         String packageName = getContext().getPackageName();
-        int videoIndex = 0;
 
         for (String[] categoryInfo : CATEGORIES) {
             String folderName = categoryInfo[0];
@@ -128,11 +120,12 @@ public class HomeFragment extends Fragment {
                 int resourceId = getContext().getResources().getIdentifier(resourceName, "raw", packageName);
 
                 if (resourceId != 0) {
-                    videoIndex++;
                     String videoUri = "android.resource://" + packageName + "/" + resourceId;
+                    // Use category_number format for stable video IDs
+                    String videoId = folderName + "_" + i;
 
                     videos.add(new Video(
-                            String.valueOf(videoIndex),
+                            videoId, // Stable ID: "math_1", "photography_2", etc.
                             displayName + " Tutorial #" + i,
                             author,
                             "",

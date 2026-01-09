@@ -70,9 +70,12 @@ public class DashboardFragment extends Fragment {
                         return;
 
                     // Time Stats
-                    // Convert hours to minutes (totalHours is in hours, multiply by 60)
-                    int totalMinutes = (int) (stats.totalHours * 60);
-                    binding.tvTotalHours.setText(String.format("%dm", totalMinutes));
+                    // Convert totalHours (from database) to total seconds
+                    int totalSeconds = (int) (stats.totalHours * 3600);
+                    int minutes = totalSeconds / 60;
+                    int seconds = totalSeconds % 60;
+                    binding.tvTotalHours.setText(String.format("%dm %ds", minutes, seconds));
+
                     binding.tvAvgPerDay.setText(String.valueOf(stats.totalVideosWatched));
                     binding.tvStreak.setText(String.valueOf(stats.streakDays));
 

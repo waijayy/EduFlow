@@ -112,6 +112,13 @@ public class CategoryVideosActivity extends AppCompatActivity {
                     int resourceId = field.getInt(null);
                     String videoUrl = "android.resource://" + getPackageName() + "/" + resourceId;
 
+                    // Extract video number from resource name (e.g., "math_vid1" -> "1")
+                    String[] parts = resourceName.split("_");
+                    String videoNumber = parts.length > 1 ? parts[parts.length - 1].replaceAll("[^0-9]", "") : "1";
+
+                    // Generate stable video ID: category_number (e.g., "math_1", "photography_2")
+                    String videoId = categoryPrefix + "_" + videoNumber;
+
                     // Generate title from resource name
                     String title = generateTitle(category, resourceName);
 
@@ -119,7 +126,7 @@ public class CategoryVideosActivity extends AppCompatActivity {
                     List<String> tags = generateTags(category);
 
                     Video video = new Video(
-                            String.valueOf(resourceId),
+                            videoId, // Stable ID matching HomeFragment format
                             title,
                             "EduFlow",
                             "", // thumbnailUrl
