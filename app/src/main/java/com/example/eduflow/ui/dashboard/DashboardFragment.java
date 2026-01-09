@@ -92,19 +92,54 @@ public class DashboardFragment extends Fragment {
     }
 
     private void setupBadges(SupabaseManager.DashboardStats stats) {
-        List<BadgeAdapter.Badge> badges = new ArrayList<>();
+        SupabaseManager.getUserAchievements(achievements -> {
+            if (getActivity() != null) {
+                getActivity().runOnUiThread(() -> {
+                    if (binding == null)
+                        return;
 
-        // Logic for badges
-        badges.add(new BadgeAdapter.Badge("🏅", "10 Videos Watched", stats.totalHours > 2.0)); // Mock logic
-        badges.add(new BadgeAdapter.Badge("🧠", "First Quiz Completed", stats.quizzesDone >= 1));
-        badges.add(new BadgeAdapter.Badge("🔥", "7-Day Streak", stats.streakDays >= 7));
-        badges.add(new BadgeAdapter.Badge("💯", "Perfect Score", stats.bestScore == 100));
-        badges.add(new BadgeAdapter.Badge("🎯", "50 Videos Watched", false)); // Locked mock
-        badges.add(new BadgeAdapter.Badge("⚡", "30-Day Streak", stats.streakDays >= 30));
+                    // Convert flat list to grouped list
+                    List<BadgeAdapter.BadgeGroup> groups = new ArrayList<>();
 
-        BadgeAdapter adapter = new BadgeAdapter(badges);
-        binding.rvBadges.setLayoutManager(new GridLayoutManager(getContext(), 2));
-        binding.rvBadges.setAdapter(adapter);
+                    // Group 1: Quiz Achievements
+                    List<BadgeAdapter.Badge> quizBadges = new ArrayList<>();
+                    for (SupabaseManager.Achievement ach : achievements) {
+                        if (ach.type.equals("first_quiz") || ach.type.equals("perfect_score")) {
+                            quizBadges.add(new BadgeAdapter.Badge(ach.icon, ach.title, ach.isUnlocked));
+                        }
+                    }
+                    if (quizBadges.size() == 2) {
+                        groups.add(new BadgeAdapter.BadgeGroup("🎓 Quiz Achievements", quizBadges));
+                    }
+
+                    // Group 2: Video Achievements
+                    List<BadgeAdapter.Badge> videoBadges = new ArrayList<>();
+                    for (SupabaseManager.Achievement ach : achievements) {
+                        if (ach.type.equals("first_video") || ach.type.equals("ten_videos")) {
+                            videoBadges.add(new BadgeAdapter.Badge(ach.icon, ach.title, ach.isUnlocked));
+                        }
+                    }
+                    if (videoBadges.size() == 2) {
+                        groups.add(new BadgeAdapter.BadgeGroup("🎬 Video Achievements", videoBadges));
+                    }
+
+                    // Group 3: Streak Achievements
+                    List<BadgeAdapter.Badge> streakBadges = new ArrayList<>();
+                    for (SupabaseManager.Achievement ach : achievements) {
+                        if (ach.type.equals("seven_day_streak") || ach.type.equals("thirty_day_streak")) {
+                            streakBadges.add(new BadgeAdapter.Badge(ach.icon, ach.title, ach.isUnlocked));
+                        }
+                    }
+                    if (streakBadges.size() == 2) {
+                        groups.add(new BadgeAdapter.BadgeGroup("🔥 Streak Achievements", streakBadges));
+                    }
+
+                    BadgeAdapter adapter = new BadgeAdapter(groups);
+                    binding.rvBadges.setLayoutManager(new LinearLayoutManager(getContext()));
+                    binding.rvBadges.setAdapter(adapter);
+                });
+            }
+        });
     }
 
     private void setupQuizHistory() {

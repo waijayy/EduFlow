@@ -225,6 +225,24 @@ public class SupabaseManager {
         public int totalVideosWatched = 0;
     }
 
+    public static class Achievement {
+        public String type;
+        public String icon;
+        public String title;
+        public boolean isUnlocked;
+
+        public Achievement(String type, String icon, String title, boolean isUnlocked) {
+            this.type = type;
+            this.icon = icon;
+            this.title = title;
+            this.isUnlocked = isUnlocked;
+        }
+    }
+
+    public interface AchievementsCallback {
+        void onAchievementsLoaded(List<Achievement> achievements);
+    }
+
     public static void getDashboardStats(DashboardStatsCallback callback) {
         executor.execute(() -> {
             try {
@@ -368,6 +386,80 @@ public class SupabaseManager {
             } catch (Exception e) {
                 e.printStackTrace();
                 callback.onStatsLoaded(new DashboardStats());
+            }
+        });
+    }
+
+    public static void getUserAchievements(AchievementsCallback callback) {
+        executor.execute(() -> {
+            try {
+                String userId = getUserId();
+                String token = getAccessToken();
+
+                if (userId.isEmpty() || token.isEmpty()) {
+                    callback.onAchievementsLoaded(new ArrayList<>());
+                    return;
+                }
+
+                JSONObject json = new JSONObject();
+                json.put("p_user_id", userId);
+
+                Request request = new Request.Builder()
+                        .url(SUPABASE_URL + "/rest/v1/rpc/get_user_achievements")
+                        .addHeader("apikey", SUPABASE_KEY)
+                        .addHeader("Authorization", "Bearer " + token)
+                        .addHeader("Content-Type", "application/json")
+                        .post(RequestBody.create(json.toString(), MediaType.parse("application/json")))
+                        .build();
+
+                try (Response response = client.newCall(request).execute()) {
+                    List<Achievement> achievements = new ArrayList<>();
+                    if (response.isSuccessful() && response.body() != null) {
+                        JSONArray results = new JSONArray(response.body().string());
+
+                        for (int i = 0; i < results.length(); i++) {
+                            JSONObject obj = results.getJSONObject(i);
+                            String type = obj.getString("achievement_type");
+                            boolean unlocked = obj.getBoolean("is_unlocked");
+
+                            // Map type to icon and title
+                            String icon = "";
+                            String title = "";
+                            switch (type) {
+                                case "first_quiz":
+                                    icon = "🧠";
+                                    title = "First Quiz Completed";
+                                    break;
+                                case "perfect_score":
+                                    icon = "💯";
+                                    title = "Perfect Score";
+                                    break;
+                                case "first_video":
+                                    icon = "📺";
+                                    title = "First Video Watch";
+                                    break;
+                                case "ten_videos":
+                                    icon = "🏅";
+                                    title = "10 Videos Watched";
+                                    break;
+                                case "seven_day_streak":
+                                    icon = "🔥";
+                                    title = "7-Day Streak";
+                                    break;
+                                case "thirty_day_streak":
+                                    icon = "⚡";
+                                    title = "30-Day Streak";
+                                    break;
+                            }
+
+                            achievements.add(new Achievement(type, icon, title, unlocked));
+                        }
+                    }
+                    callback.onAchievementsLoaded(achievements);
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+                callback.onAchievementsLoaded(new ArrayList<>());
             }
         });
     }

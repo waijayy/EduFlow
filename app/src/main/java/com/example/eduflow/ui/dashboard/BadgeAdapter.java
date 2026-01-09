@@ -14,67 +14,78 @@ import java.util.List;
 
 public class BadgeAdapter extends RecyclerView.Adapter<BadgeAdapter.ViewHolder> {
 
-    private final List<Badge> badges;
+    private final List<BadgeGroup> badgeGroups;
 
-    public BadgeAdapter(List<Badge> badges) {
-        this.badges = badges;
+    public BadgeAdapter(List<BadgeGroup> badgeGroups) {
+        this.badgeGroups = badgeGroups;
     }
 
     @NonNull
     @Override
     public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_badge, parent, false);
+        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_badge_group, parent, false);
         return new ViewHolder(view);
     }
 
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
-        Badge badge = badges.get(position);
-        holder.tvIcon.setText(badge.icon);
-        holder.tvTitle.setText(badge.title);
+        BadgeGroup group = badgeGroups.get(position);
+        holder.tvGroupTitle.setText(group.groupTitle);
+
+        // Bind first badge
+        if (group.badges.size() > 0) {
+            Badge badge1 = group.badges.get(0);
+            holder.tvIcon1.setText(badge1.icon);
+            holder.tvTitle1.setText(badge1.title);
+            applyBadgeStyle(holder, badge1, 1);
+        }
+
+        // Bind second badge
+        if (group.badges.size() > 1) {
+            Badge badge2 = group.badges.get(1);
+            holder.tvIcon2.setText(badge2.icon);
+            holder.tvTitle2.setText(badge2.title);
+            applyBadgeStyle(holder, badge2, 2);
+        }
+    }
+
+    private void applyBadgeStyle(ViewHolder holder, Badge badge, int badgeNumber) {
+        TextView tvStatus = (badgeNumber == 1) ? holder.tvStatus1 : holder.tvStatus2;
+        TextView tvTitle = (badgeNumber == 1) ? holder.tvTitle1 : holder.tvTitle2;
+        TextView tvIcon = (badgeNumber == 1) ? holder.tvIcon1 : holder.tvIcon2;
 
         if (badge.isUnlocked) {
-            holder.tvStatus.setText("🔓 Unlocked");
-            holder.tvStatus.setTextColor(holder.itemView.getContext().getResources().getColor(R.color.warning_yellow));
-            holder.tvTitle.setTextColor(holder.itemView.getContext().getResources().getColor(R.color.white));
-            holder.tvIcon.setAlpha(1.0f);
-            holder.tvIcon.getPaint().setColorFilter(null); // Reset filter
+            tvStatus.setText("🔓 Unlocked");
+            tvStatus.setTextColor(holder.itemView.getContext().getResources().getColor(R.color.warning_yellow));
+            tvTitle.setTextColor(holder.itemView.getContext().getResources().getColor(R.color.white));
+            tvIcon.setAlpha(1.0f);
         } else {
-            holder.tvStatus.setText("🔒 Locked");
-            // Darker gray for locked status
-            holder.tvStatus.setTextColor(android.graphics.Color.parseColor("#555555"));
-            // Grayed out title
-            holder.tvTitle.setTextColor(android.graphics.Color.parseColor("#555555"));
-
-            // Lower alpha and grayscale logic (simulation for text/emoji)
-            holder.tvIcon.setAlpha(0.3f);
-            // Note: ColorMatrixColorFilter works on ImageViews/Drawables, but for TextView
-            // emoji,
-            // alpha + text color is best. If these were ImageViews, we'd use setFilter.
-            // Since they are TextViews (Emojis), setting text color to transparent gray can
-            // help too,
-            // but emojis usually retain color unless we use a specialized spanned.
-            // Simple alpha 0.3 is usually enough to look "off".
-
-            // If we wanted true grayscale for emoji TextView, we'd need a LayerType hack or
-            // just low alpha.
-            // Let's stick to low alpha 0.3f which is quite dim.
+            tvStatus.setText("🔒 Locked");
+            tvStatus.setTextColor(android.graphics.Color.parseColor("#555555"));
+            tvTitle.setTextColor(android.graphics.Color.parseColor("#555555"));
+            tvIcon.setAlpha(0.3f);
         }
     }
 
     @Override
     public int getItemCount() {
-        return badges.size();
+        return badgeGroups.size();
     }
 
     public static class ViewHolder extends RecyclerView.ViewHolder {
-        TextView tvIcon, tvTitle, tvStatus;
+        TextView tvGroupTitle;
+        TextView tvIcon1, tvTitle1, tvStatus1;
+        TextView tvIcon2, tvTitle2, tvStatus2;
 
         public ViewHolder(@NonNull View itemView) {
             super(itemView);
-            tvIcon = itemView.findViewById(R.id.tvIcon);
-            tvTitle = itemView.findViewById(R.id.tvTitle);
-            tvStatus = itemView.findViewById(R.id.tvStatus);
+            tvGroupTitle = itemView.findViewById(R.id.tvGroupTitle);
+            tvIcon1 = itemView.findViewById(R.id.tvIcon1);
+            tvTitle1 = itemView.findViewById(R.id.tvTitle1);
+            tvStatus1 = itemView.findViewById(R.id.tvStatus1);
+            tvIcon2 = itemView.findViewById(R.id.tvIcon2);
+            tvTitle2 = itemView.findViewById(R.id.tvTitle2);
+            tvStatus2 = itemView.findViewById(R.id.tvStatus2);
         }
     }
 
@@ -87,6 +98,16 @@ public class BadgeAdapter extends RecyclerView.Adapter<BadgeAdapter.ViewHolder> 
             this.icon = icon;
             this.title = title;
             this.isUnlocked = isUnlocked;
+        }
+    }
+
+    public static class BadgeGroup {
+        public String groupTitle;
+        public List<Badge> badges;
+
+        public BadgeGroup(String groupTitle, List<Badge> badges) {
+            this.groupTitle = groupTitle;
+            this.badges = badges;
         }
     }
 }

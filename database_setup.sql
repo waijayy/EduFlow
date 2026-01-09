@@ -307,3 +307,52 @@ CREATE POLICY "Users can delete own video notes"
   ON video_notes FOR DELETE
   USING (auth.uid() = user_id);
 
+-- =====================================================
+-- 7. USER ACHIEVEMENTS FUNCTION
+-- =====================================================
+-- Computes achievements on-the-fly from existing tables
+-- No separate achievements table needed
+
+CREATE OR REPLACE FUNCTION get_user_achievements(p_user_id UUID)
+RETURNS TABLE (
+  achievement_type TEXT,
+  is_unlocked BOOLEAN,
+  unlocked_count INTEGER
+) AS $$
+BEGIN
+  RETURN QUERY
+  -- First Quiz Achievement
+  SELECT 'first_quiz'::TEXT, 
+         EXISTS(SELECT 1 FROM quiz_results WHERE user_id = p_user_id)::BOOLEAN,
+         (SELECT COUNT(*)::INTEGER FROM quiz_results WHERE user_id = p_user_id)
+  UNION ALL
+  -- Perfect Score Achievement
+  SELECT 'perfect_score'::TEXT,
+         EXISTS(SELECT 1 FROM quiz_results WHERE user_id = p_user_id AND score = total_questions)::BOOLEAN,
+         (SELECT COUNT(*)::INTEGER FROM quiz_results WHERE user_id = p_user_id AND score = total_questions)
+  UNION ALL
+  -- First Video Achievement
+  SELECT 'first_video'::TEXT,
+         EXISTS(SELECT 1 FROM video_watches WHERE user_id = p_user_id)::BOOLEAN,
+         (SELECT COUNT(DISTINCT video_id)::INTEGER FROM video_watches WHERE user_id = p_user_id)
+  UNION ALL
+  -- 10 Videos Achievement
+  SELECT 'ten_videos'::TEXT,
+         ((SELECT COUNT(DISTINCT video_id) FROM video_watches WHERE user_id = p_user_id) >= 10)::BOOLEAN,
+         (SELECT COUNT(DISTINCT video_id)::INTEGER FROM video_watches WHERE user_id = p_user_id)
+  UNION ALL
+  -- 7-Day Streak Achievement
+  SELECT 'seven_day_streak'::TEXT,
+         (calculate_login_streak(p_user_id) >= 7)::BOOLEAN,
+         calculate_login_streak(p_user_id)::INTEGER
+  UNION ALL
+  -- 30-Day Streak Achievement
+  SELECT 'thirty_day_streak'::TEXT,
+         (calculate_login_streak(p_user_id) >= 30)::BOOLEAN,
+         calculate_login_streak(p_user_id)::INTEGER;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Grant execute permission to authenticated users
+GRANT EXECUTE ON FUNCTION get_user_achievements(UUID) TO authenticated;
+
