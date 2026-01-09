@@ -47,6 +47,12 @@
             android:name=".MyNotesActivity"
             android:exported="false"
             android:theme="@style/Theme.EduFlow" />
+        
+        <!-- Category Videos Activity -->
+        <activity
+            android:name=".CategoryVideosActivity"
+            android:exported="false"
+            android:theme="@style/Theme.EduFlow" />
             
     </application>
 

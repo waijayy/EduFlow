@@ -41,7 +41,6 @@ public class CategoryAdapter extends RecyclerView.Adapter<CategoryAdapter.Catego
 
         holder.binding.ivIcon.setImageResource(category.getIconResId());
         holder.binding.tvName.setText(category.getName());
-        holder.binding.tvVideoCount.setText(category.getVideoCount() + " videos");
 
         holder.binding.getRoot().setOnClickListener(v -> onClick.onCategoryClick(category));
     }

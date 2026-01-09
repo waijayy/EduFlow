@@ -44,16 +44,19 @@ public class ExploreFragment extends Fragment {
 
     private void setupCategories() {
         allCategories = Arrays.asList(
-                new Category("1", "Programming", R.drawable.ic_category_programming, 124),
-                new Category("2", "Design", R.drawable.ic_category_design, 89),
-                new Category("3", "Business", R.drawable.ic_category_business, 67),
-                new Category("4", "Science", R.drawable.ic_category_science, 93),
-                new Category("5", "Languages", R.drawable.ic_category_languages, 56),
-                new Category("6", "Health", R.drawable.ic_category_health, 45));
+                new Category("1", "Photography", R.drawable.ic_category_camera, 0),
+                new Category("2", "Math", R.drawable.ic_category_math, 0),
+                new Category("3", "Programming", R.drawable.ic_category_programming, 0),
+                new Category("4", "English", R.drawable.ic_category_languages, 0),
+                new Category("5", "Business", R.drawable.ic_category_business, 0),
+                new Category("6", "Exercise", R.drawable.ic_category_health, 0));
 
         categoryAdapter = new CategoryAdapter(allCategories, category -> {
             // Navigate to category videos
-            // TODO: Open CategoryVideosActivity
+            android.content.Intent intent = new android.content.Intent(getContext(),
+                    com.example.eduflow.CategoryVideosActivity.class);
+            intent.putExtra(com.example.eduflow.CategoryVideosActivity.EXTRA_CATEGORY_NAME, category.getName());
+            startActivity(intent);
         });
 
         binding.rvCategories.setLayoutManager(new GridLayoutManager(getContext(), 2));
