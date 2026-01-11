@@ -170,6 +170,77 @@ public class SupabaseManager {
         return prefs != null ? prefs.getString(KEY_ACCESS_TOKEN, "") : "";
     }
 
+    public interface ProfileUpdateCallback {
+        void onSuccess();
+
+        void onError(String message);
+    }
+
+    public static void updateUserProfile(String newName, String newEmail, ProfileUpdateCallback callback) {
+        executor.execute(() -> {
+            try {
+                String token = getAccessToken();
+                String currentEmail = getUserEmail();
+
+                if (token.isEmpty()) {
+                    callback.onError("Not logged in");
+                    return;
+                }
+
+                boolean success = true;
+                String errorMessage = "";
+
+                // Update user metadata (name) in Supabase Auth
+                try {
+                    JSONObject userUpdate = new JSONObject();
+                    JSONObject data = new JSONObject();
+                    data.put("name", newName);
+                    userUpdate.put("data", data);
+
+                    // If email changed, include it in the update
+                    if (!newEmail.equals(currentEmail)) {
+                        userUpdate.put("email", newEmail);
+                    }
+
+                    Request request = new Request.Builder()
+                            .url(SUPABASE_URL + "/auth/v1/user")
+                            .addHeader("apikey", SUPABASE_KEY)
+                            .addHeader("Authorization", "Bearer " + token)
+                            .addHeader("Content-Type", "application/json")
+                            .put(RequestBody.create(userUpdate.toString(), MediaType.parse("application/json")))
+                            .build();
+
+                    try (Response response = client.newCall(request).execute()) {
+                        if (response.isSuccessful()) {
+                            // Update local storage
+                            if (prefs != null) {
+                                SharedPreferences.Editor editor = prefs.edit();
+                                editor.putString(KEY_USER_NAME, newName);
+                                editor.putString(KEY_USER_EMAIL, newEmail);
+                                editor.apply();
+                            }
+                        } else {
+                            success = false;
+                            String body = response.body() != null ? response.body().string() : "Unknown error";
+                            errorMessage = "Failed to update profile: " + body;
+                        }
+                    }
+                } catch (Exception e) {
+                    success = false;
+                    errorMessage = e.getMessage();
+                }
+
+                if (success) {
+                    callback.onSuccess();
+                } else {
+                    callback.onError(errorMessage);
+                }
+            } catch (Exception e) {
+                callback.onError(e.getMessage());
+            }
+        });
+    }
+
     public static void saveQuizResult(String quizId, int score, int totalQuestions) {
         executor.execute(() -> {
             try {

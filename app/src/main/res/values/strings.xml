@@ -44,6 +44,13 @@
     <string name="notifications">Notifications</string>
     <string name="manage_notifications">Manage push notifications</string>
     <string name="privacy_security">Privacy &amp; Security</string>
+    <string name="edit_profile">Edit Profile</string>
+    <string name="save">Save</string>
+    <string name="cancel">Cancel</string>
+    <string name="my_content">My Content</string>
+    <string name="updating_profile">Updating profile...</string>
+    <string name="profile_updated">Profile updated successfully</string>
+    <string name="profile_update_failed">Failed to update profile</string>
     
     <!-- Categories -->
     <string name="cat_programming">Programming</string>

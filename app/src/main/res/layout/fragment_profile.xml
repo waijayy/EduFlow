@@ -96,10 +96,90 @@
                 android:orientation="vertical"
                 android:padding="16dp">
 
+                <!-- Name -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <FrameLayout
+                        android:layout_width="40dp"
+                        android:layout_height="40dp"
+                        android:background="@drawable/bg_icon_circle">
+
+                        <ImageView
+                            android:layout_width="20dp"
+                            android:layout_height="20dp"
+                            android:layout_gravity="center"
+                            android:src="@drawable/ic_profile"
+                            app:tint="@color/primary_cyan" />
+                    </FrameLayout>
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="12dp"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/name"
+                            android:textColor="@color/text_secondary"
+                            android:textSize="12sp" />
+
+                        <FrameLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content">
+
+                            <TextView
+                                android:id="@+id/tvProfileName"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="User"
+                                android:textColor="@color/text_primary"
+                                android:textSize="14sp" />
+
+                            <EditText
+                                android:id="@+id/etProfileName"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:background="@drawable/bg_input_field"
+                                android:inputType="textPersonName"
+                                android:padding="8dp"
+                                android:textColor="@color/text_primary"
+                                android:textSize="14sp"
+                                android:visibility="gone" />
+                        </FrameLayout>
+                    </LinearLayout>
+
+                    <ImageButton
+                        android:id="@+id/btnEditName"
+                        android:layout_width="32dp"
+                        android:layout_height="32dp"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:contentDescription="Edit name"
+                        android:src="@drawable/ic_edit"
+                        app:tint="@color/text_secondary" />
+
+                    <ImageButton
+                        android:id="@+id/btnSaveName"
+                        android:layout_width="32dp"
+                        android:layout_height="32dp"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:contentDescription="Save name"
+                        android:src="@drawable/ic_check"
+                        android:visibility="gone"
+                        app:tint="@color/primary_cyan" />
+                </LinearLayout>
+
                 <!-- Email -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
                     android:gravity="center_vertical"
                     android:orientation="horizontal">
 
@@ -117,9 +197,10 @@
                     </FrameLayout>
 
                     <LinearLayout
-                        android:layout_width="wrap_content"
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="12dp"
+                        android:layout_weight="1"
                         android:orientation="vertical">
 
                         <TextView
@@ -129,15 +210,57 @@
                             android:textColor="@color/text_secondary"
                             android:textSize="12sp" />
 
-                        <TextView
-                            android:id="@+id/tvEmail"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="test@gmail.com"
-                            android:textColor="@color/text_primary"
-                            android:textSize="14sp" />
+                        <FrameLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content">
+
+                            <TextView
+                                android:id="@+id/tvEmail"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="test@gmail.com"
+                                android:textColor="@color/text_primary"
+                                android:textSize="14sp" />
+
+                            <EditText
+                                android:id="@+id/etProfileEmail"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:background="@drawable/bg_input_field"
+                                android:inputType="textEmailAddress"
+                                android:padding="8dp"
+                                android:textColor="@color/text_primary"
+                                android:textSize="14sp"
+                                android:visibility="gone" />
+                        </FrameLayout>
                     </LinearLayout>
+
+                    <ImageButton
+                        android:id="@+id/btnEditEmail"
+                        android:layout_width="32dp"
+                        android:layout_height="32dp"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:contentDescription="Edit email"
+                        android:src="@drawable/ic_edit"
+                        app:tint="@color/text_secondary" />
+
+                    <ImageButton
+                        android:id="@+id/btnSaveEmail"
+                        android:layout_width="32dp"
+                        android:layout_height="32dp"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:contentDescription="Save email"
+                        android:src="@drawable/ic_check"
+                        android:visibility="gone"
+                        app:tint="@color/primary_cyan" />
                 </LinearLayout>
+
+                <!-- Removed Save Button -->
+                <View
+                    android:id="@+id/btnSaveProfile"
+                    android:layout_width="0dp"
+                    android:layout_height="0dp"
+                    android:visibility="gone" />
 
                 <!-- Member Since -->
                 <LinearLayout
@@ -229,12 +352,12 @@
             </LinearLayout>
         </androidx.cardview.widget.CardView>
 
-        <!-- Preferences & Settings -->
+        <!-- My Content Section -->
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="24dp"
-            android:text="@string/preferences_settings"
+            android:text="@string/my_content"
             android:textColor="@color/text_primary"
             android:textSize="18sp"
             android:textStyle="bold" />
@@ -297,6 +420,32 @@
                             android:textSize="12sp" />
                     </LinearLayout>
                 </LinearLayout>
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+
+        <!-- Preferences & Settings -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:text="@string/preferences_settings"
+            android:textColor="@color/text_primary"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            app:cardBackgroundColor="@color/background_card"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="0dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
 
                 <!-- Notifications -->
                 <LinearLayout
