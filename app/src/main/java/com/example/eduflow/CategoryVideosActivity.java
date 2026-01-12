@@ -65,9 +65,18 @@ public class CategoryVideosActivity extends AppCompatActivity {
             viewPagerVideos.setVisibility(View.VISIBLE);
             tvEmptyState.setVisibility(View.GONE);
 
-            videoAdapter = new VideoAdapter(videos, videoId -> {
-                // Quiz navigation placeholder
+            videoAdapter = new VideoAdapter(videos, video -> {
+                android.content.Intent intent = new android.content.Intent(
+                        CategoryVideosActivity.this,
+                        com.example.eduflow.VideoNotesActivity.class
+                );
+                intent.putExtra(com.example.eduflow.VideoNotesActivity.EXTRA_VIDEO_ID, video.getId());
+                intent.putExtra(com.example.eduflow.VideoNotesActivity.EXTRA_VIDEO_TITLE, video.getTitle());
+                startActivity(intent);
             });
+
+
+
             viewPagerVideos.setAdapter(videoAdapter);
 
             // Manage video lifecycle
