@@ -71,19 +71,21 @@
                     android:padding="8dp">
 
                     <TextView
-                        android:layout_width="wrap_content"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:text="Total Time Watch"
+                        android:textAlignment="center"
                         android:textColor="@color/text_secondary"
                         android:textSize="12sp"
                         android:textStyle="bold" />
 
                     <TextView
                         android:id="@+id/tvTotalHours"
-                        android:layout_width="wrap_content"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="12dp"
                         android:text="0m"
+                        android:textAlignment="center"
                         android:textColor="@color/primary_cyan"
                         android:textSize="20sp"
                         android:textStyle="bold" />
@@ -111,19 +113,21 @@
                     android:padding="8dp">
 
                     <TextView
-                        android:layout_width="wrap_content"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:text="Total Video Watched"
+                        android:textAlignment="center"
                         android:textColor="@color/text_secondary"
                         android:textSize="12sp"
                         android:textStyle="bold" />
 
                     <TextView
                         android:id="@+id/tvAvgPerDay"
-                        android:layout_width="wrap_content"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="12dp"
                         android:text="0"
+                        android:textAlignment="center"
                         android:textColor="@color/accent_magenta"
                         android:textSize="20sp"
                         android:textStyle="bold" />
@@ -151,19 +155,21 @@
                     android:padding="8dp">
 
                     <TextView
-                        android:layout_width="wrap_content"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:text="🔥 Streak"
+                        android:textAlignment="center"
                         android:textColor="@color/text_secondary"
                         android:textSize="12sp"
                         android:textStyle="bold" />
 
                     <TextView
                         android:id="@+id/tvStreak"
-                        android:layout_width="wrap_content"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="12dp"
                         android:text="0"
+                        android:textAlignment="center"
                         android:textColor="#F97316"
                         android:textSize="24sp"
                         android:textStyle="bold" />
@@ -214,19 +220,21 @@
                     android:padding="8dp">
 
                     <TextView
-                        android:layout_width="wrap_content"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:text="⭐ Best"
+                        android:textAlignment="center"
                         android:textColor="@color/text_secondary"
                         android:textSize="12sp"
                         android:textStyle="bold" />
 
                     <TextView
                         android:id="@+id/tvBestScore"
-                        android:layout_width="wrap_content"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="12dp"
                         android:text="0%"
+                        android:textAlignment="center"
                         android:textColor="#EAB308"
                         android:textSize="24sp"
                         android:textStyle="bold" />
@@ -254,19 +262,21 @@
                     android:padding="8dp">
 
                     <TextView
-                        android:layout_width="wrap_content"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:text="📈 Average"
+                        android:textAlignment="center"
                         android:textColor="@color/text_secondary"
                         android:textSize="12sp"
                         android:textStyle="bold" />
 
                     <TextView
                         android:id="@+id/tvAvgScore"
-                        android:layout_width="wrap_content"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="12dp"
                         android:text="0%"
+                        android:textAlignment="center"
                         android:textColor="@color/primary_cyan"
                         android:textSize="24sp"
                         android:textStyle="bold" />
@@ -294,21 +304,23 @@
                     android:padding="8dp">
 
                     <TextView
-                        android:layout_width="wrap_content"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:text="🎯 Lowest"
+                        android:textAlignment="center"
                         android:textColor="@color/text_secondary"
                         android:textSize="12sp"
                         android:textStyle="bold" />
 
                     <TextView
                         android:id="@+id/tvLowestScore"
-                        android:layout_width="wrap_content"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="12dp"
                         android:text="0%"
+                        android:textAlignment="center"
                         android:textColor="@color/error_red"
-                        android:textSize="24sp"
+                        android:textSize="24dp"
                         android:textStyle="bold" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>

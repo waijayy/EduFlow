@@ -31,7 +31,10 @@ public class QuizHistoryAdapter extends RecyclerView.Adapter<QuizHistoryAdapter.
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         QuizResult result = history.get(position);
-        holder.tvQuizName.setText(result.quizName);
+
+        // Format quiz name: replace underscores with spaces
+        String displayName = result.quizName.replace("_", " ");
+        holder.tvQuizName.setText(displayName);
         holder.tvDate.setText(result.date);
 
         holder.tvScore.setText(result.scorePercent + "%");
